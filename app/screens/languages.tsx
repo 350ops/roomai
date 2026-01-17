@@ -10,9 +10,9 @@ import { US, ES, PT } from 'country-flag-icons/string/3x2';
 import { useLanguage, LanguageCode } from '@/app/_contexts/LanguageContext';
 
 interface Language {
-  title: string;
+    title: string;
   code: LanguageCode;
-  flag: string;
+    flag: string;
 }
 
 const languages: Language[] = [
@@ -24,12 +24,12 @@ const languages: Language[] = [
 export default function LanguagesScreen() {
   const { language, setLanguage, t } = useLanguage();
 
-  return (
-    <>
-      <Header showBackButton />
-      <ThemedScroller className="p-global">
+    return (
+        <>
+            <Header showBackButton />
+            <ThemedScroller className="p-global">
         <Section title={t('chooseLanguage')} titleSize="4xl" className="mt-4 mb-10" />
-        <View className="rounded-2xl overflow-hidden">
+                <View className="rounded-2xl overflow-hidden">
           {languages.map((lang, index) => (
             <LanguageItem
               key={index}
@@ -39,40 +39,40 @@ export default function LanguagesScreen() {
               selected={language === lang.code}
               onSelect={() => setLanguage(lang.code)}
             />
-          ))}
-        </View>
-      </ThemedScroller>
-    </>
+                    ))}
+                </View>
+            </ThemedScroller>
+        </>
   );
 }
 
 interface LanguageItemProps {
-  title: string;
-  code: string;
-  flag: string;
-  selected: boolean;
-  onSelect: () => void;
+    title: string;
+    code: string;
+    flag: string;
+    selected: boolean;
+    onSelect: () => void;
 }
 
 const LanguageItem = ({ title, code, flag, selected, onSelect }: LanguageItemProps) => {
-  return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={onSelect}
+    return (
+        <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={onSelect}
       className="flex-row items-center py-4 px-6 border-b border-border"
-    >
-      <View className="w-7 h-7 mr-6 rounded overflow-hidden">
+        >
+            <View className="w-7 h-7 mr-6 rounded overflow-hidden">
         <SvgXml xml={flag} width={28} height={28} />
-      </View>
-      <View className="flex-1">
+            </View>
+            <View className="flex-1">
         <ThemedText className="text-lg font-bold">{title}</ThemedText>
         <ThemedText className="text-sm opacity-60">{code.toUpperCase()}</ThemedText>
-      </View>
+            </View>
       {selected && (
-        <AnimatedView animation="bounceIn" duration={500}>
-          <Icon name="Check" size={16} className="w-7 h-7 bg-highlight rounded-full" />
-        </AnimatedView>
+                <AnimatedView animation="bounceIn" duration={500}>
+                    <Icon name="Check" size={16} className="w-7 h-7 bg-highlight rounded-full" />
+                </AnimatedView>
       )}
-    </TouchableOpacity>
-  );
+        </TouchableOpacity>
+    );
 };

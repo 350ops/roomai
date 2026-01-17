@@ -20,8 +20,8 @@ export default function RootLayout() {
       <GestureHandlerRootView className={`bg-background ${Platform.OS === 'ios' ? 'pb-0' : ''}`} style={{ flex: 1 }}>
         <ThemeProvider>
           <LanguageProvider>
-            <AuthProvider>
-              <Stack 
+          <AuthProvider>
+            <Stack 
           screenOptions={{ 
             headerShown: false, 
             contentStyle: { backgroundColor: colors.bg } 
@@ -49,7 +49,7 @@ export default function RootLayout() {
           <Stack.Screen name="screens/clear-space-tips" />
           
             </Stack>
-            </AuthProvider>
+          </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>
       </GestureHandlerRootView>

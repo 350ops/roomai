@@ -156,28 +156,28 @@ export default function ScanResultsScreen() {
     const isDisabled = loading || disabled;
 
     const buttonContent = (
-      <View style={glassStyles.buttonContent}>
+            <View style={glassStyles.buttonContent}>
         {loading ? (
           <ActivityIndicator size="small" color={isPrimary ? '#FFFFFF' : colors.text} />
         ) : (
           <>
-            {icon && (
-              <Icon 
-                name={icon as any} 
-                size={isPrimary ? 22 : 18} 
-                color={isPrimary ? '#FFFFFF' : colors.text} 
-              />
-            )}
-            <ThemedText style={[
-              glassStyles.buttonText, 
-              { color: isPrimary ? '#FFFFFF' : colors.text },
-              !isPrimary && { fontSize: 15 }
-            ]}>
-              {title}
-            </ThemedText>
+              {icon && (
+                <Icon 
+                  name={icon as any} 
+                  size={isPrimary ? 22 : 18} 
+                  color={isPrimary ? '#FFFFFF' : colors.text} 
+                />
+              )}
+              <ThemedText style={[
+                glassStyles.buttonText, 
+                { color: isPrimary ? '#FFFFFF' : colors.text },
+                !isPrimary && { fontSize: 15 }
+              ]}>
+                {title}
+              </ThemedText>
           </>
         )}
-      </View>
+            </View>
     );
 
     if (supportsNativeLiquidGlass) {
@@ -360,8 +360,8 @@ export default function ScanResultsScreen() {
     setIsOpening3DModel(true);
 
     try {
-      // Decode the URL in case it was encoded during navigation
-      const decodedUrl = decodeURIComponent(params.scanUrl);
+        // Decode the URL in case it was encoded during navigation
+        const decodedUrl = decodeURIComponent(params.scanUrl);
       
       // Use expo-sharing as the primary method - it's more reliable
       const isAvailable = await Sharing.isAvailableAsync();
@@ -523,18 +523,18 @@ export default function ScanResultsScreen() {
                     <View style={glassStyles.dimensionsList}>
                       {summary.roomWidth && summary.roomDepth && (
                         <>
-                          <View style={glassStyles.dimensionRow}>
-                            <ThemedText style={{ color: colors.placeholder }}>
+                        <View style={glassStyles.dimensionRow}>
+                          <ThemedText style={{ color: colors.placeholder }}>
                               Width
-                            </ThemedText>
+                          </ThemedText>
                             <View style={{ alignItems: 'flex-end' }}>
-                              <ThemedText style={[glassStyles.dimensionValue, { color: colors.text }]}>
+                          <ThemedText style={[glassStyles.dimensionValue, { color: colors.text }]}>
                                 {summary.roomWidthCm}
                               </ThemedText>
                               <ThemedText style={{ color: colors.placeholder, fontSize: 11 }}>
                                 ({summary.roomWidth}m exact)
-                              </ThemedText>
-                            </View>
+                          </ThemedText>
+                        </View>
                           </View>
                           <View style={glassStyles.dimensionRow}>
                             <ThemedText style={{ color: colors.placeholder }}>
@@ -557,12 +557,12 @@ export default function ScanResultsScreen() {
                             Ceiling Height
                           </ThemedText>
                           <View style={{ alignItems: 'flex-end' }}>
-                            <ThemedText style={[glassStyles.dimensionValue, { color: colors.text }]}>
+                          <ThemedText style={[glassStyles.dimensionValue, { color: colors.text }]}>
                               {summary.wallHeightCm}
                             </ThemedText>
                             <ThemedText style={{ color: colors.placeholder, fontSize: 11 }}>
                               ({summary.wallHeight}m exact)
-                            </ThemedText>
+                          </ThemedText>
                           </View>
                         </View>
                       )}
