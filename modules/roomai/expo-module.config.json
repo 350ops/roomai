@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["RoomaiModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.roomai.RoomaiModule"]
+  }
+}

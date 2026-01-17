@@ -18,7 +18,7 @@ import Header from "@/components/Header";
 import { ThemedText } from "@/components/ThemedText";
 import ThemeScroller from "@/components/ThemeScroller";
 import AnimatedView from "@/components/AnimatedView";
-import useThemeColors from "@/app/contexts/ThemeColors";
+import useThemeColors from "@/app/_contexts/ThemeColors";
 import Icon from "@/components/Icon";
 
 // Safely check if liquid glass is available (iOS 26+)
@@ -306,7 +306,7 @@ export default function ARRoomScanScreen() {
                   Scan Your Room in 3D
                 </ThemedText>
                 <ThemedText style={[glassStyles.heroDescription, { color: colors.placeholder }]}>
-                  Use your device's LiDAR sensor to create an accurate 3D model of your room for better renovation planning.
+                  Your iPhone's LiDAR sensor creates an accurate 3D representation of your space. The easiest way to measure your rooms.
                 </ThemedText>
               </View>
             </LiquidGlassCard>
@@ -316,7 +316,7 @@ export default function ARRoomScanScreen() {
           <AnimatedView animation="fadeInUp" delay={50}>
             <LiquidGlassButton
               onPress={startScan}
-              title="Start Room Scan"
+              title="Start scanning"
               icon="ScanLine"
               disabled={!isSupported}
               variant="primary"
@@ -327,44 +327,6 @@ export default function ARRoomScanScreen() {
                 AR Room Scanning is only available on iOS devices with LiDAR
               </ThemedText>
             )}
-          </AnimatedView>
-
-          <AnimatedView animation="fadeInUp" delay={100}>
-            {/* Requirements - Liquid Glass */}
-            <LiquidGlassCard style={{ marginTop: 20 }}>
-              <View style={glassStyles.cardContent}>
-                <ThemedText style={[glassStyles.sectionTitle, { color: colors.text }]}>
-                Requirements
-              </ThemedText>
-              
-                <View style={glassStyles.requirementsList}>
-                  <View style={glassStyles.requirementRow}>
-                    <View style={[glassStyles.requirementIcon, { backgroundColor: isSupported ? 'rgba(169, 204, 156, 0.25)' : 'rgba(240, 72, 72, 0.2)' }]}>
-                    <Icon
-                        name={isSupported ? "Check" : "X"}
-                      size={16}
-                        color={isSupported ? SUCCESS_GREEN : ERROR_RED}
-                    />
-                    </View>
-                    <ThemedText style={{ color: colors.text, flex: 1 }}>iOS Device (iPhone/iPad)</ThemedText>
-                  </View>
-                  
-                  <View style={glassStyles.requirementRow}>
-                    <View style={[glassStyles.requirementIcon, { backgroundColor: colors.isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)' }]}>
-                      <Icon name="Radar" size={16} color={WARNING_YELLOW} />
-                </View>
-                    <ThemedText style={{ color: colors.text, flex: 1 }}>LiDAR sensor (iPhone 12 Pro+, iPad Pro)</ThemedText>
-                  </View>
-                  
-                  <View style={glassStyles.requirementRow}>
-                    <View style={[glassStyles.requirementIcon, { backgroundColor: colors.accentLight }]}>
-                      <Icon name="Sun" size={16} color={colors.iconAccent} />
-                </View>
-                    <ThemedText style={{ color: colors.text, flex: 1 }}>Well-lit room for best results</ThemedText>
-                  </View>
-                </View>
-              </View>
-            </LiquidGlassCard>
           </AnimatedView>
 
           <AnimatedView animation="fadeInUp" delay={200}>
@@ -381,9 +343,9 @@ export default function ARRoomScanScreen() {
                       <ThemedText style={glassStyles.stepNumberText}>1</ThemedText>
                   </View>
                     <View style={glassStyles.stepContent}>
-                      <ThemedText style={[glassStyles.stepTitle, { color: colors.text }]}>Start Scanning</ThemedText>
+                      <ThemedText style={[glassStyles.stepTitle, { color: colors.text }]}>Corners first</ThemedText>
                       <ThemedText style={[glassStyles.stepDescription, { color: colors.placeholder }]}>
-                      Point your device at the room and slowly move around
+                      Start by pointing your device at the room corners (both floor and ceiling) and slowly move around to capture the room.
                     </ThemedText>
                   </View>
                 </View>
@@ -393,9 +355,9 @@ export default function ARRoomScanScreen() {
                       <ThemedText style={glassStyles.stepNumberText}>2</ThemedText>
                   </View>
                     <View style={glassStyles.stepContent}>
-                      <ThemedText style={[glassStyles.stepTitle, { color: colors.text }]}>Capture Details</ThemedText>
+                      <ThemedText style={[glassStyles.stepTitle, { color: colors.text }]}>Continue scanning</ThemedText>
                       <ThemedText style={[glassStyles.stepDescription, { color: colors.placeholder }]}>
-                      The scanner automatically detects walls, doors, and windows
+                      The app automatically detects sofas, doors, windows, and other furniture. Continue scanning by pointing your device at the furniture and slowly move around to capture the room.
                     </ThemedText>
                   </View>
                 </View>
@@ -405,9 +367,9 @@ export default function ARRoomScanScreen() {
                       <ThemedText style={glassStyles.stepNumberText}>3</ThemedText>
                   </View>
                     <View style={glassStyles.stepContent}>
-                      <ThemedText style={[glassStyles.stepTitle, { color: colors.text }]}>Export & Use</ThemedText>
+                      <ThemedText style={[glassStyles.stepTitle, { color: colors.text }]}>Finish</ThemedText>
                       <ThemedText style={[glassStyles.stepDescription, { color: colors.placeholder }]}>
-                      Get a 3D model to use for renovation planning
+                       When you're happy, tap on "Finish" and get ready for an accurate 3D representation of your room.
                     </ThemedText>
                   </View>
                 </View>
@@ -634,7 +596,7 @@ const glassStyles = StyleSheet.create({
   },
   heroDescription: {
     fontSize: 15,
-    textAlign: 'center',
+    textAlign: 'left',
     lineHeight: 22,
   },
   sectionTitle: {

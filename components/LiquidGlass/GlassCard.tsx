@@ -9,7 +9,7 @@ import React from 'react';
 import { View, ViewStyle, Pressable, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '@/app/contexts/ThemeContext';
+import { useTheme } from '@/app/_contexts/ThemeContext';
 
 // Try to import expo-glass-effect, fallback gracefully
 let GlassView: any = null;

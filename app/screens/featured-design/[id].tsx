@@ -7,8 +7,8 @@ import ThemedText from '@/components/ThemedText';
 import ThemedScroller from '@/components/ThemeScroller';
 import { Chip } from '@/components/Chip';
 import { Placeholder } from '@/components/Placeholder';
-import useThemeColors from '@/app/contexts/ThemeColors';
-import { getFeaturedDesign } from '@/app/data/featuredDesigns';
+import useThemeColors from '@/app/_contexts/ThemeColors';
+import { getFeaturedDesign } from '@/app/_data/featuredDesigns';
 
 export default function FeaturedDesignScreen() {
   const colors = useThemeColors();

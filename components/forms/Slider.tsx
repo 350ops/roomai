@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { PanGestureHandler, PanGestureHandlerGestureEvent, TapGestureHandler } from 'react-native-gesture-handler';
 import ThemedText from '../ThemedText';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 
 type SliderSize = 's' | 'm' | 'l';
 

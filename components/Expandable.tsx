@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, Pressable, Animated, Platform, UIManager, ViewStyle } from 'react-native';
 import Icon, { IconName } from './Icon';
 import ThemedText from './ThemedText';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);

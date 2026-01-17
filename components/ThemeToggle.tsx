@@ -1,5 +1,5 @@
 import { Pressable, View } from 'react-native';
-import { useTheme } from '@/app/contexts/ThemeContext';
+import { useTheme } from '@/app/_contexts/ThemeContext';
 import Feather from '@expo/vector-icons/Feather';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useEffect } from 'react';

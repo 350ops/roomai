@@ -5,7 +5,7 @@ import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
 export default function TabsLayout() {
   // Dynamic colors for liquid glass on iOS - using app primary blue
   const tintColor = Platform.OS === 'ios' 
-    ? DynamicColorIOS({ dark: '#4DA3E1', light: '#4DA3E1' })
+    ? DynamicColorIOS({ dark: '#14532D', light: '#14532D' })
     : '#4DA3E1';
 
   const labelColor = Platform.OS === 'ios'
@@ -42,12 +42,12 @@ export default function TabsLayout() {
         <Label>My Designs</Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="account">
+      <NativeTabs.Trigger name="settings">
         <Icon 
-          sf={{ default: 'person', selected: 'person.fill' }} 
-          drawable="ic_menu_manage"
+          sf={{ default: 'gearshape', selected: 'gearshape.fill' }} 
+          drawable="ic_menu_preferences"
         />
-        <Label>Account</Label>
+        <Label>Settings</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );

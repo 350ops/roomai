@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 import ThemedText from './ThemedText';
 
 interface WebView3DModelProps {

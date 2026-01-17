@@ -9,7 +9,7 @@ import { View, PanResponder, Animated } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import ThemedText from '../ThemedText';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 
 interface GlassSliderProps {
   value: number;

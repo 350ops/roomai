@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { View, Pressable, ImageBackground, Text } from 'react-native';
-import useThemeColors from '../contexts/ThemeColors';
+import useThemeColors from '../_contexts/ThemeColors';
 import { Button } from '@/components/Button';
 import Icon from '@/components/Icon';
 import ThemedText from '@/components/ThemedText';
@@ -25,7 +25,7 @@ export default function EditProfileScreen() {
                     </View>
                     <View className='flex-1 items-end justify-end'>
                         <View className='w-full my-10 pt-10 items-center'>
-                            <Text className='font-extrabold text-black text-4xl text-center font-outfit-bold'>novaHogar +</Text>
+                            <Text className='font-extrabold text-black text-4xl text-center font-outfit-bold'>reForma +</Text>
                             <Text className='text-lg text-white font-light mt-1 text-center'>Unlock all premium features</Text>
                         </View>
                         <View className=' flex-row gap-2 mx-auto mb-6'>

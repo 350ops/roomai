@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Platform, StyleSheet, Pressable, ViewStyle, Animated, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
-import { useThemeColors } from 'app/contexts/ThemeColors';
+import { useThemeColors } from '@/app/_contexts/ThemeColors';
 import { Link } from 'expo-router';
 import Icon, { IconName } from './Icon';
 import { router } from 'expo-router';

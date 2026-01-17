@@ -8,14 +8,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import ThemedText from '@/components/ThemedText';
 import Icon, { IconName } from '@/components/Icon';
 import AnimatedView from '@/components/AnimatedView';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 import { 
     ItemizedEstimateResult, 
     RoomBreakdown, 
     LineItem, 
     formatCurrency, 
     formatQuantity 
-} from '@/app/lib/itemizedEstimateService';
+} from '@/app/_lib/itemizedEstimateService';
 
 // Safely check if liquid glass is available (iOS 26+)
 let supportsNativeLiquidGlass = false;

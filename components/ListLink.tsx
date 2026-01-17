@@ -3,7 +3,7 @@ import { View, Pressable, ViewStyle } from 'react-native';
 import { Link } from 'expo-router';
 import Icon, { IconName } from './Icon';
 import ThemedText from './ThemedText';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 
 interface ListLinkProps {
   icon?: IconName;

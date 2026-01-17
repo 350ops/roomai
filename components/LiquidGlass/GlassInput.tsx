@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { TextInput, View, Animated, TextInputProps, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import ThemedText from '../ThemedText';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 
 interface GlassInputProps extends TextInputProps {
   label?: string;

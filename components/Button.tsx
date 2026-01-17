@@ -3,7 +3,7 @@ import React from 'react';
 import { Text, ActivityIndicator, TouchableOpacity, View, Pressable } from 'react-native';
 import { Link, router } from 'expo-router';
 import Icon, { IconName } from './Icon';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 
 type RoundedOption = 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'full';
 

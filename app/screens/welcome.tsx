@@ -106,7 +106,7 @@ export default function OnboardingScreen() {
                     <View style={{ bottom: insets.bottom }} className="w-full px-6 mb-global flex flex-col space-y-2 absolute bottom-0">
                         <View className='flex flex-row items-center justify-center gap-2'>
                             <Pressable
-                                onPress={() => router.push('/screens/onboarding-start')}
+                                onPress={() => router.push('/(tabs)')}
                                 className='flex-1 rounded-full flex flex-row items-center justify-center py-4'
                                 style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.25)' }}
                             >
@@ -120,7 +120,7 @@ export default function OnboardingScreen() {
                                 <Icon name="Mail" size={20} color="black" />
                             </Pressable>
                             <Pressable
-                                onPress={() => router.push('/screens/onboarding-start')}
+                                onPress={() => router.push('/(tabs)')}
                                 className='flex-1 rounded-full flex flex-row items-center justify-center py-4'
                                 style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.25)' }}
                             >

@@ -7,7 +7,7 @@ import Header from '@/components/Header';
 import ThemedText from '@/components/ThemedText';
 import AnimatedView from '@/components/AnimatedView';
 import Icon from '@/components/Icon';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 
 const toRgba = (hexColor: string, alpha: number) => {
   if (!hexColor.startsWith('#')) {

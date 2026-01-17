@@ -1,11 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, TouchableOpacity, Pressable, Animated, Platform, ViewStyle } from 'react-native';
 import ActionSheet, { ActionSheetRef } from 'react-native-actions-sheet';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 import Icon from '@/components/Icon';
 import ThemedText from '@/components/ThemedText';
 import * as NavigationBar from 'expo-navigation-bar';
-import { useTheme } from '@/app/contexts/ThemeContext';
+import { useTheme } from '@/app/_contexts/ThemeContext';
 import { InputVariant } from './Input';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

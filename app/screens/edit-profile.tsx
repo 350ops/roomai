@@ -7,7 +7,7 @@ import Input from '@/components/forms/Input';
 import { Button } from '@/components/Button';
 import Icon from '@/components/Icon';
 import { GlassToggle, GlassCard } from '../../components/LiquidGlass';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../_contexts/ThemeContext';
 
 export default function EditProfileScreen() {
   const [profileImage, setProfileImage] = useState<string | null>(null);

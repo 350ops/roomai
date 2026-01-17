@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleProp, ViewStyle, TouchableOpacity } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 import ThemedText from './ThemedText';
 import Icon from './Icon';
 

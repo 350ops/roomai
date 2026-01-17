@@ -8,7 +8,7 @@ import Icon from '@/components/Icon';
 import { Button } from '@/components/Button';
 import AnimatedView from '@/components/AnimatedView';
 
-// FAQ data for NovaHogar renovation app
+// FAQ data for reForma renovation app
 const faqData = [
   {
     id: '1',
@@ -62,14 +62,14 @@ const faqData = [
   }
 ];
 
-// Contact information for NovaHogar
+// Contact information for reForma
 const contactInfo = [
   {
     id: 'email',
     type: 'Email Support',
-    value: 'support@novahogar.app',
+    value: 'support@reforma.app',
     icon: 'Mail' as const,
-    action: () => Linking.openURL('mailto:support@novahogar.app')
+    action: () => Linking.openURL('mailto:support@reforma.app')
   },
   {
     id: 'whatsapp',
@@ -154,7 +154,7 @@ export default function HelpScreen() {
               title="Contact Support" 
               iconStart="Mail"
               className="mt-8"
-              onPress={() => Linking.openURL('mailto:support@novahogar.app')}
+              onPress={() => Linking.openURL('mailto:support@reforma.app')}
             />
           </View>
         </AnimatedView>

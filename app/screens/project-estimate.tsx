@@ -15,7 +15,7 @@ import ThemedText from '@/components/ThemedText';
 import Icon from '@/components/Icon';
 import AnimatedView from '@/components/AnimatedView';
 import { Button } from '@/components/Button';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 
 // Import pricing configuration
 import {
@@ -31,7 +31,7 @@ import {
     FURNITURE_OPTIONS,
     CEILING_HEIGHTS,
     getCitiesForCountry,
-} from '@/app/lib/pricing';
+} from '@/app/_lib/pricing';
 
 // Import itemized estimate service
 import {
@@ -40,7 +40,7 @@ import {
     ItemizedEstimateResult,
     calculateItemizedEstimate,
     formatCurrency,
-} from '@/app/lib/itemizedEstimateService';
+} from '@/app/_lib/itemizedEstimateService';
 
 // Safely check if liquid glass is available (iOS 26+)
 let supportsNativeLiquidGlass = false;

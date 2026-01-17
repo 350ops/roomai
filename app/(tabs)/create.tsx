@@ -10,7 +10,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { editImageWithOpenAI } from "@/lib/openai";
 
 
 // Safely check if liquid glass is available (iOS 26+)
@@ -28,19 +27,28 @@ try {
 
 import { Button } from '@/components/Button';
 import ThemedText from '@/components/ThemedText';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 import Icon from '@/components/Icon';
 import AnimatedView from '@/components/AnimatedView';
 import AnimatedBottomSheet from '@/components/AnimatedBottomSheet';
 import { AppleListRow, AppleListGroup } from '@/components/AppleListRow';
-import { saveDesign } from '@/app/utils/designStorage';
+import { saveDesign } from '@/app/_utils/designStorage';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const CARD_WIDTH = SCREEN_WIDTH - 80;     
 
-// API Key from environment variable
-const DEFAULT_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY || '';
+// Supabase Edge Function URL for secure OpenAI proxy
+const getEdgeFunctionUrl = () => {
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+    return `${supabaseUrl}/functions/v1/openai-image`;
+};
+
+// Supabase anon key for Edge Function authorization
+const getSupabaseAnonKey = () => {
+    return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 
+           process.env.EXPO_PUBLIC_SUPABASE_KEY || '';
+};
 
 const toRgba = (hexColor: string, alpha: number) => {
     if (!hexColor.startsWith('#')) {
@@ -67,17 +75,17 @@ const toRgba = (hexColor: string, alpha: number) => {
     return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 };
 
-// Dark green color matching the hero card (bg-green-900)
-const CARD_GREEN = '#14532d';
+// Brand green color
+const BRAND_GREEN = '#007334';
 
 const createLiquidGlassStyles = (colors: ReturnType<typeof useThemeColors>) =>
     StyleSheet.create({
         cardOuter: {
             borderRadius: 32,
             overflow: 'hidden',
-            shadowColor: colors.isDark ? 'rgba(0,0,0,0.6)' : 'rgba(20, 83, 45, 0.3)',
-            shadowOffset: { width: 0, height: 12 },
-            shadowOpacity: 0.6,
+            shadowColor: colors.isDark ? 'rgba(0,0,0,0.4)' : 'rgba(0, 0, 0, 0.08)',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 1,
             shadowRadius: 24,
         },
         cardBlur: {
@@ -85,7 +93,7 @@ const createLiquidGlassStyles = (colors: ReturnType<typeof useThemeColors>) =>
             borderWidth: 0,
             borderColor: 'transparent',
             overflow: 'hidden',
-            backgroundColor: colors.isDark ? colors.secondary : CARD_GREEN,
+            backgroundColor: colors.isDark ? colors.secondary : '#FFFFFF',
         },
         topHighlight: {
             position: 'absolute',
@@ -93,38 +101,34 @@ const createLiquidGlassStyles = (colors: ReturnType<typeof useThemeColors>) =>
             left: 20,
             right: 20,
             height: 1,
-            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+            backgroundColor: 'rgba(0, 0, 0, 0.05)',
             borderRadius: 1,
         },
         cardContent: {
-            paddingHorizontal: 24,
-            paddingTop: 32,
-            paddingBottom: 24,
+            paddingHorizontal: 28,
+            paddingTop: 40,
+            paddingBottom: 32,
             alignItems: 'center',
         },
         iconContainer: {
-            marginBottom: 24,
-            borderRadius: 28,
+            marginBottom: 28,
+            borderRadius: 24,
             overflow: 'hidden',
-            shadowColor: 'rgba(0,0,0,0.3)',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 1,
-            shadowRadius: 16,
         },
         iconBlur: {
-            width: 100,
-            height: 100,
-            borderRadius: 28,
+            width: 80,
+            height: 80,
+            borderRadius: 24,
             alignItems: 'center',
             justifyContent: 'center',
             borderWidth: 0,
-            backgroundColor: 'rgba(255, 255, 255, 0.15)',
+            backgroundColor: colors.isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 115, 52, 0.08)',
             overflow: 'hidden',
         },
         title: {
-            fontSize: 28,
-            fontWeight: '700',
-            color: '#FFFFFF',
+            fontSize: 26,
+            fontWeight: '800',
+            color: colors.isDark ? '#FFFFFF' : '#1a1a1a',
             textAlign: 'center',
             marginBottom: 12,
             letterSpacing: -0.5,
@@ -132,43 +136,39 @@ const createLiquidGlassStyles = (colors: ReturnType<typeof useThemeColors>) =>
         description: {
             fontSize: 15,
             lineHeight: 22,
-            color: 'rgba(255, 255, 255, 0.8)',
+            color: colors.isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.5)',
             textAlign: 'center',
-            marginBottom: 28,
-            paddingHorizontal: 8,
+            marginBottom: 32,
+            paddingHorizontal: 12,
         },
         actionButton: {
             borderRadius: 50,
             overflow: 'hidden',
             width: '100%',
-            shadowColor: 'rgba(0,0,0,0.2)',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 1,
-            shadowRadius: 8,
         },
         buttonBlur: {
             borderRadius: 50,
             borderWidth: 0,
-            backgroundColor: colors.isDark ? colors.secondary : PASTEL_YELLOW,
+            backgroundColor: colors.isDark ? '#FFFFFF' : '#1a1a1a',
             overflow: 'hidden',
         },
         buttonContent: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
-            paddingVertical: 16,
+            paddingVertical: 18,
             paddingHorizontal: 32,
-            gap: 8,
+            gap: 10,
         },
         buttonText: {
-            fontSize: 16,
+            fontSize: 17,
             fontWeight: '600',
-            color: colors.isDark ? '#FFFFFF' : '#14532d',
-            letterSpacing: 0.5,
+            color: colors.isDark ? '#1a1a1a' : '#FFFFFF',
+            letterSpacing: 0.3,
         },
         skipText: {
-            fontSize: 13,
-            color: 'rgba(255, 255, 255, 0.7)',
+            fontSize: 14,
+            color: colors.isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)',
             fontWeight: '500',
         },
     });
@@ -209,29 +209,25 @@ const LiquidGlassCard = ({
     glassGradients 
 }: LiquidGlassCardProps) => {
     if (supportsNativeLiquidGlass) {
-        // Use native iOS 26+ GlassView with green background
+        // Use native iOS 26+ GlassView with clean white/dark background
         return (
             <View style={[liquidGlassStyles.cardOuter, style]}>
                 <GlassView
                     style={liquidGlassStyles.cardBlur}
                     glassEffectStyle={cardStyle}
-                    tintColor={colors.isDark ? undefined : CARD_GREEN}
+                    tintColor={colors.isDark ? undefined : '#FFFFFF'}
                     isInteractive
                 >
-                    {/* Top highlight line */}
-                    <View style={liquidGlassStyles.topHighlight} />
                     {children}
                 </GlassView>
             </View>
         );
     }
 
-    // Fallback - solid green background (no blur needed)
+    // Fallback - solid white/dark background
     return (
         <View style={[liquidGlassStyles.cardOuter, style]}>
             <View style={liquidGlassStyles.cardBlur}>
-                {/* Top highlight line */}
-                <View style={liquidGlassStyles.topHighlight} />
                 {children}
             </View>
         </View>
@@ -255,12 +251,12 @@ interface LiquidGlassIconProps {
 
 const LiquidGlassIcon = ({ 
     icon, 
-    size = 56,
+    size = 40,
     colors,
     liquidGlassStyles,
 }: LiquidGlassIconProps) => {
-    // Icon color is white on green background
-    const iconColor = colors.isDark ? '#FFFFFF' : '#FFFFFF';
+    // Icon color is green on light background, white on dark
+    const iconColor = colors.isDark ? '#FFFFFF' : BRAND_GREEN;
     
     if (supportsNativeLiquidGlass) {
         return (
@@ -313,8 +309,8 @@ const LiquidGlassButton = ({
     colors,
     liquidGlassStyles,
 }: LiquidGlassButtonProps) => {
-    // Button text/icon color: green on pastel yellow (light), white on dark
-    const buttonTextColor = colors.isDark ? '#FFFFFF' : CARD_GREEN;
+    // Button text/icon color: white on black (light), dark on white (dark)
+    const buttonTextColor = colors.isDark ? '#1a1a1a' : '#FFFFFF';
     
     if (supportsNativeLiquidGlass) {
         return (
@@ -322,7 +318,7 @@ const LiquidGlassButton = ({
                 <GlassView
                     style={liquidGlassStyles.buttonBlur}
                     glassEffectStyle="regular"
-                    tintColor={colors.isDark ? undefined : PASTEL_YELLOW}
+                    tintColor={colors.isDark ? '#FFFFFF' : '#1a1a1a'}
                     isInteractive
                 >
                     <View style={liquidGlassStyles.buttonContent}>
@@ -340,7 +336,7 @@ const LiquidGlassButton = ({
         );
     }
 
-    // Fallback - solid pastel yellow button
+    // Fallback - solid black/white button
     return (
         <Pressable onPress={onPress} style={liquidGlassStyles.actionButton}>
             <View style={liquidGlassStyles.buttonBlur}>
@@ -390,7 +386,6 @@ export default function CreateScreen() {
         };
     }, [colors]);
 
-    const [apiKey, setApiKey] = useState(DEFAULT_API_KEY);
     const [image, setImage] = useState<string | null>(null);
     const [prompt, setPrompt] = useState('');
     const [resultImage, setResultImage] = useState<string | null>(null);
@@ -423,6 +418,10 @@ export default function CreateScreen() {
     const sliderPosition = useRef(new Animated.Value(0)).current;
     const [carouselIndex, setCarouselIndex] = useState(0);
     const carouselRef = useRef<FlatList>(null);
+    
+    // Pre-fetch optimization: start API call before user confirms
+    const [apiStarted, setApiStarted] = useState(false);
+    const apiPromiseRef = useRef<Promise<{ success: boolean; imageUrl?: string; error?: string }> | null>(null);
     
     // Strict realism mode and room type
     const [strictMode, setStrictMode] = useState(false);
@@ -944,12 +943,12 @@ Output must appear as a real photograph, not a 3D render.`;
         return error?.message || 'An unexpected error occurred.';
     };
 
-    // Show recap screen before generating
+    // Show recap screen before generating AND start API call in background
     const handleGenerate = () => {
         setErrorDetails(null);
 
-        if (!apiKey) {
-            Alert.alert('Configuration Error', 'API key is not configured. Please contact support.');
+        if (!getSupabaseAnonKey()) {
+            Alert.alert('Configuration Error', 'Service is not configured. Please contact support.');
             return;
         }
         if (!image) {
@@ -965,23 +964,23 @@ Output must appear as a real photograph, not a 3D render.`;
         sliderPosition.setValue(0);
         setSliderCompleted(false);
         setShowRecap(true);
+        
+        // 🚀 Start API call immediately in background (before user confirms with slider)
+        // This reduces perceived wait time by several seconds
+        console.log('🚀 Pre-starting API call while showing recap...');
+        setApiStarted(true);
+        apiPromiseRef.current = startApiCall();
     };
 
-    // Actually call the API
-    const actuallyGenerate = async () => {
-        setLoading(true);
-        setResultImage(null);
-        setCurrentStep(4);
+    // Start API call in background (returns promise with result)
+    const startApiCall = async (): Promise<{ success: boolean; imageUrl?: string; error?: string }> => {
+        console.log('🚀 Starting image generation in background...');
+        console.log('📦 Selected furniture items:', selectedFurnitureItems);
 
         try {
-            console.log('🚀 Starting image generation...');
-            console.log('📦 Selected furniture items:', selectedFurnitureItems);
-
             const formData = new FormData();
             
             // Build array of images: room image first, then furniture reference images
-            // For gpt-image-1.5, first 5 images have higher fidelity
-            // Use array notation 'image[]' to send multiple images
             const imagesArray: any[] = [];
             
             // Main room image (first for highest fidelity preservation)
@@ -1005,7 +1004,6 @@ Output must appear as a real photograph, not a 3D render.`;
                 selectedFurnitureItems.forEach((itemId) => {
                     const furnitureItem = furnitureReferenceItems.find(item => item.id === itemId);
                     if (furnitureItem) {
-                        // Convert require() asset to URI
                         const asset = Image.resolveAssetSource(furnitureItem.image);
                         imagesArray.push({
                             uri: asset.uri,
@@ -1016,7 +1014,7 @@ Output must appear as a real photograph, not a 3D render.`;
                 });
             }
 
-            // Add user uploaded images (furniture, floors, decor, etc.)
+            // Add user uploaded images
             if (uploadedImages.length > 0) {
                 uploadedImages.forEach((uploadedImg) => {
                     imagesArray.push({
@@ -1037,15 +1035,20 @@ Output must appear as a real photograph, not a 3D render.`;
                 `📸 Sending ${imagesArray.length} images to API (room + ${flooringSampleCount} flooring sample + ${selectedFurnitureItems.length} furniture items + ${uploadedImages.length} uploaded products)`
             );
             
-            // Enhanced prompt with furniture instructions
             const enhancedPrompt = buildPromptFromSelections();
             formData.append('prompt', enhancedPrompt);
             formData.append('input_fidelity', 'high');
             formData.append('n', '1');
             formData.append('size', '1024x1024');
-            formData.append('model', 'gpt-image-1'); // Using 1 for better multi-image support
+            formData.append('model', 'gpt-image-1');
 
-            const response = await editImageWithOpenAI(formData);
+            const response = await fetch(getEdgeFunctionUrl(), {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getSupabaseAnonKey()}`,
+                },
+                body: formData,
+            });
 
             const responseText = await response.text();
             let data;
@@ -1053,31 +1056,60 @@ Output must appear as a real photograph, not a 3D render.`;
             try {
                 data = JSON.parse(responseText);
             } catch (parseError) {
-                const errorMsg = `Failed to parse response. Status: ${response.status}`;
-                setErrorDetails(errorMsg);
-                Alert.alert('Parse Error', 'Failed to parse API response.');
-                setCurrentStep(3);
-                return;
+                return { success: false, error: 'Failed to parse API response.' };
             }
 
             if (!response.ok || data.error) {
                 const errorMessage = getErrorMessage(data.error, response.status);
-                const detailedError = `Status: ${response.status}\nMessage: ${data.error?.message || 'No message'}`;
-                setErrorDetails(detailedError);
-                Alert.alert('OpenAI Error', errorMessage);
-                setCurrentStep(3);
+                return { success: false, error: errorMessage };
             } else if (data.data && data.data.length > 0) {
                 const imageData = data.data[0];
-                if (imageData.url) {
-                    setResultImage(imageData.url);
-                } else if (imageData.b64_json) {
-                    setResultImage(`data:image/png;base64,${imageData.b64_json}`);
+                const imageUrl = imageData.url || (imageData.b64_json ? `data:image/png;base64,${imageData.b64_json}` : null);
+                if (imageUrl) {
+                    return { success: true, imageUrl };
                 }
-                setErrorDetails(null);
+            }
+            
+            return { success: false, error: 'No image returned from API.' };
+        } catch (error: any) {
+            console.error('❌ API Error:', error);
+            return { success: false, error: error.message || 'Network error' };
+        }
+    };
+
+    // Wait for API result and show it (called when slider completes)
+    const actuallyGenerate = async () => {
+        setLoading(true);
+        setResultImage(null);
+        setCurrentStep(4);
+
+        try {
+            // Wait for the pre-started API call to complete
+            if (apiPromiseRef.current) {
+                console.log('⏳ Waiting for pre-started API call...');
+                const result = await apiPromiseRef.current;
+                
+                if (result.success && result.imageUrl) {
+                    setResultImage(result.imageUrl);
+                    setErrorDetails(null);
+                } else {
+                    setErrorDetails(result.error || 'Unknown error');
+                    Alert.alert('Error', result.error || 'Failed to generate image.');
+                    setCurrentStep(3);
+                }
             } else {
-                setErrorDetails(`Unexpected response: ${JSON.stringify(data).substring(0, 300)}`);
-                Alert.alert('Error', 'No image returned from API.');
-                setCurrentStep(3);
+                // Fallback: API wasn't pre-started, start it now
+                console.log('⚠️ API not pre-started, starting now...');
+                const result = await startApiCall();
+                
+                if (result.success && result.imageUrl) {
+                    setResultImage(result.imageUrl);
+                    setErrorDetails(null);
+                } else {
+                    setErrorDetails(result.error || 'Unknown error');
+                    Alert.alert('Error', result.error || 'Failed to generate image.');
+                    setCurrentStep(3);
+                }
             }
         } catch (error: any) {
             const errorMsg = `Network Error: ${error.message || 'Unknown error'}`;
@@ -1086,6 +1118,8 @@ Output must appear as a real photograph, not a 3D render.`;
             setCurrentStep(3);
         } finally {
             setLoading(false);
+            setApiStarted(false);
+            apiPromiseRef.current = null;
         }
     };
 
@@ -1105,6 +1139,9 @@ Output must appear as a real photograph, not a 3D render.`;
         setSliderCompleted(false);
         setShouldGenerate(false);
         sliderPosition.setValue(0);
+        // Reset pre-fetch state
+        setApiStarted(false);
+        apiPromiseRef.current = null;
         setSelectedFurnitureItems([]);
         setPlacementInstructions('');
         setUploadedImages([]);
@@ -1641,7 +1678,7 @@ Output must appear as a real photograph, not a 3D render.`;
                                     <ActivityIndicator size="small" color={colors.highlight} className="mb-3" />
                                     <ThemedText className="text-2xl font-semibold mb-2">Processing...</ThemedText>
                                     <ThemedText className="text-light-subtext dark:text-dark-subtext text-center px-4">
-                                        AI is transforming your room. Please don't close the app.
+                                        Transforming your room... Please don't close this! It will just take a moment.
                                     </ThemedText>
                                 </View>
                             ) : resultImage ? (
@@ -1764,7 +1801,7 @@ Output must appear as a real photograph, not a 3D render.`;
                             onPress={async () => {
                                 if (!resultImage) return;
                                 try {
-                                    const filename = `NovaHogar_${Date.now()}.png`;
+                                    const filename = `reForma_${Date.now()}.png`;
                                     const cachePath = `${Paths.cache.uri}/${filename}`;
                                     
                                     // Download/save image to cache first
@@ -1837,7 +1874,7 @@ Output must appear as a real photograph, not a 3D render.`;
                                         return;
                                     }
                                     
-                                    const filename = `NovaHogar_${Date.now()}.png`;
+                                    const filename = `reForma_${Date.now()}.png`;
                                     const cachePath = `${Paths.cache.uri}/${filename}`;
                                     
                                     // Download/save image to cache first
@@ -1867,7 +1904,7 @@ Output must appear as a real photograph, not a 3D render.`;
                                     
                                     await Sharing.shareAsync(cachePath, {
                                         mimeType: 'image/png',
-                                        dialogTitle: 'Share your NovaHogar design',
+                                        dialogTitle: 'Share your reForma design',
                                     });
                                 } catch (error) {
                                     console.error('Failed to share image:', error);
@@ -1905,12 +1942,22 @@ Output must appear as a real photograph, not a 3D render.`;
             <Modal
                 visible={showRecap}
                 animationType="fade"
-                onRequestClose={() => setShowRecap(false)}
+                onRequestClose={() => {
+                    setShowRecap(false);
+                    // Cancel the pre-started API call (result will be ignored)
+                    setApiStarted(false);
+                    apiPromiseRef.current = null;
+                }}
             >
                 <View className="flex-1" style={{ backgroundColor: colors.bg, paddingTop: insets.top + 20 }}>
                     {/* Close button */}
                     <Pressable
-                        onPress={() => setShowRecap(false)}
+                        onPress={() => {
+                            setShowRecap(false);
+                            // Cancel the pre-started API call (result will be ignored)
+                            setApiStarted(false);
+                            apiPromiseRef.current = null;
+                        }}
                         className="absolute top-10 left-4 z-10 p-3"
                         style={{ top: insets.top + 10 }}
                     >

@@ -11,7 +11,7 @@ import { router } from 'expo-router';
 import { Button } from '../../components/Button';
 import ThemedText from '../../components/ThemedText';
 import Icon from '../../components/Icon';
-import useThemeColors from '../contexts/ThemeColors';
+import useThemeColors from '../_contexts/ThemeColors';
 
 interface ErrorFallbackProps {
   error: Error | null;

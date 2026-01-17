@@ -1,7 +1,7 @@
 import { View, Dimensions } from "react-native";
 import ThemedText from "./ThemedText";
 import { LineChart } from "react-native-chart-kit";
-import useThemeColors from "@/app/contexts/ThemeColors";
+import useThemeColors from "@/app/_contexts/ThemeColors";
 import { useState } from "react";
 import Icon from "./Icon";
 

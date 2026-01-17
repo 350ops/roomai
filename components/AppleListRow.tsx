@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Pressable, StyleSheet, Platform } from 'react-native';
 import ThemedText from '@/components/ThemedText';
 import Icon, { IconName } from '@/components/Icon';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 
 // Safely check if liquid glass is available (iOS 26+)
 let supportsLiquidGlass = false;

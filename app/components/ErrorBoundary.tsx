@@ -6,7 +6,7 @@
  */
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { logger } from '../lib/logger';
+import { logger } from '../_lib/logger';
 import ErrorFallback from './ErrorFallback';
 
 interface Props {

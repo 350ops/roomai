@@ -1,4 +1,4 @@
--- NovaHogar Pricing Catalog & Bill of Quantities Schema
+-- reForma Pricing Catalog & Bill of Quantities Schema
 -- Run this in your Supabase SQL Editor after 001_project_estimates.sql
 
 -- ============================================

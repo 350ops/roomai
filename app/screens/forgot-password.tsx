@@ -6,8 +6,8 @@ import { Button } from '@/components/Button';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { useAuth } from '../contexts/AuthContext';
-import { validateEmail } from '../lib/validation';
+import { useAuth } from '../_contexts/AuthContext';
+import { validateEmail } from '../_lib/validation';
 
 export default function ForgotPasswordScreen() {
   const insets = useSafeAreaInsets();

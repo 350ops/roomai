@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon, { IconName } from './Icon';
 import Input from './forms/Input';
 import ThemedText from './ThemedText';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 import { Button } from './Button';
 
 interface ServiceVariantCreatorProps {

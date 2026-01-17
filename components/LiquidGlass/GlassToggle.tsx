@@ -9,8 +9,8 @@ import React from 'react';
 import { Pressable, View, Animated, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import ThemedText from '../ThemedText';
-import useThemeColors from '@/app/contexts/ThemeColors';
-import { useTheme } from '@/app/contexts/ThemeContext';
+import useThemeColors from '@/app/_contexts/ThemeColors';
+import { useTheme } from '@/app/_contexts/ThemeContext';
 
 interface GlassToggleProps {
   value: boolean;

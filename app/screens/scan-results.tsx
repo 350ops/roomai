@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Pressable, Alert, ScrollView, StyleSheet, Platform } from "react-native";
+import { View, Pressable, Alert, ScrollView, StyleSheet, Platform, Dimensions } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { File } from "expo-file-system/next";
@@ -10,8 +10,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import Header from "@/components/Header";
 import { ThemedText } from "@/components/ThemedText";
 import AnimatedView from "@/components/AnimatedView";
-import useThemeColors from "@/app/contexts/ThemeColors";
+import useThemeColors from "@/app/_contexts/ThemeColors";
 import Icon from "@/components/Icon";
+import FloorPlan2D from "@/components/FloorPlan2D";
 
 // Safely check if liquid glass is available (iOS 26+)
 let supportsNativeLiquidGlass = false;
@@ -29,6 +30,24 @@ try {
 // Primary blue from palette
 const PRIMARY_BLUE = '#4DA3E1';
 const PRIMARY_BLUE_DARK = '#5DB5F0';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Format to millimeter precision
+const formatPreciseMeters = (meters: number): string => {
+  return `${meters.toFixed(3)}m`;
+};
+
+// Format to centimeters for display
+const formatToCm = (meters: number): string => {
+  const cm = Math.round(meters * 100);
+  if (cm >= 100) {
+    const m = Math.floor(cm / 100);
+    const remainingCm = cm % 100;
+    return remainingCm > 0 ? `${m}m ${remainingCm}cm` : `${m}m`;
+  }
+  return `${cm}cm`;
+};
 
 // Try to import file viewer
 let openFile: ((path: string, options?: any) => Promise<void>) | null = null;
@@ -303,12 +322,23 @@ export default function ScanResultsScreen() {
 
     return {
       roomLabel,
-      floorArea: floorArea > 0 ? floorArea.toFixed(2) : null,
-      estimatedVolume: estimatedVolume > 0 ? estimatedVolume.toFixed(2) : null,
-      wallHeight: wallHeight > 0 ? wallHeight.toFixed(2) : null,
-      roomWidth: roomWidth > 0 ? roomWidth.toFixed(2) : null,
-      roomDepth: roomDepth > 0 ? roomDepth.toFixed(2) : null,
-      totalWallArea: totalWallArea > 0 ? totalWallArea.toFixed(2) : null,
+      // Precise values (3 decimal places = millimeter precision)
+      floorArea: floorArea > 0 ? floorArea.toFixed(3) : null,
+      floorAreaDisplay: floorArea > 0 ? floorArea.toFixed(2) : null,
+      estimatedVolume: estimatedVolume > 0 ? estimatedVolume.toFixed(3) : null,
+      wallHeight: wallHeight > 0 ? wallHeight.toFixed(3) : null,
+      wallHeightCm: wallHeight > 0 ? formatToCm(wallHeight) : null,
+      roomWidth: roomWidth > 0 ? roomWidth.toFixed(3) : null,
+      roomWidthCm: roomWidth > 0 ? formatToCm(roomWidth) : null,
+      roomDepth: roomDepth > 0 ? roomDepth.toFixed(3) : null,
+      roomDepthCm: roomDepth > 0 ? formatToCm(roomDepth) : null,
+      totalWallArea: totalWallArea > 0 ? totalWallArea.toFixed(3) : null,
+      totalWallAreaDisplay: totalWallArea > 0 ? totalWallArea.toFixed(2) : null,
+      // Raw values for calculations
+      rawFloorArea: floorArea,
+      rawWidth: roomWidth,
+      rawDepth: roomDepth,
+      rawHeight: wallHeight,
       wallCount: walls.length,
       doorCount: doors.length,
       windowCount: windows.length,
@@ -481,23 +511,48 @@ export default function ScanResultsScreen() {
                     </ThemedText>
                     <View style={glassStyles.dimensionsList}>
                       {summary.roomWidth && summary.roomDepth && (
-                        <View style={glassStyles.dimensionRow}>
-                          <ThemedText style={{ color: colors.placeholder }}>
-                            Floor Size
-                          </ThemedText>
-                          <ThemedText style={[glassStyles.dimensionValue, { color: colors.text }]}>
-                            {summary.roomWidth}m × {summary.roomDepth}m
-                          </ThemedText>
-                        </View>
+                        <>
+                          <View style={glassStyles.dimensionRow}>
+                            <ThemedText style={{ color: colors.placeholder }}>
+                              Width
+                            </ThemedText>
+                            <View style={{ alignItems: 'flex-end' }}>
+                              <ThemedText style={[glassStyles.dimensionValue, { color: colors.text }]}>
+                                {summary.roomWidthCm}
+                              </ThemedText>
+                              <ThemedText style={{ color: colors.placeholder, fontSize: 11 }}>
+                                ({summary.roomWidth}m exact)
+                              </ThemedText>
+                            </View>
+                          </View>
+                          <View style={glassStyles.dimensionRow}>
+                            <ThemedText style={{ color: colors.placeholder }}>
+                              Depth
+                            </ThemedText>
+                            <View style={{ alignItems: 'flex-end' }}>
+                              <ThemedText style={[glassStyles.dimensionValue, { color: colors.text }]}>
+                                {summary.roomDepthCm}
+                              </ThemedText>
+                              <ThemedText style={{ color: colors.placeholder, fontSize: 11 }}>
+                                ({summary.roomDepth}m exact)
+                              </ThemedText>
+                            </View>
+                          </View>
+                        </>
                       )}
                       {summary.wallHeight && (
                         <View style={glassStyles.dimensionRow}>
                           <ThemedText style={{ color: colors.placeholder }}>
                             Ceiling Height
                           </ThemedText>
-                          <ThemedText style={[glassStyles.dimensionValue, { color: colors.text }]}>
-                            {summary.wallHeight}m
-                          </ThemedText>
+                          <View style={{ alignItems: 'flex-end' }}>
+                            <ThemedText style={[glassStyles.dimensionValue, { color: colors.text }]}>
+                              {summary.wallHeightCm}
+                            </ThemedText>
+                            <ThemedText style={{ color: colors.placeholder, fontSize: 11 }}>
+                              ({summary.wallHeight}m exact)
+                            </ThemedText>
+                          </View>
                         </View>
                       )}
                       {summary.estimatedVolume && (
@@ -513,6 +568,39 @@ export default function ScanResultsScreen() {
                     </View>
                   </View>
                 )}
+              </View>
+            </LiquidGlassCard>
+          </AnimatedView>
+        )}
+
+        {/* 2D Floor Plan */}
+        {roomData && (
+          <AnimatedView animation="fadeInUp" delay={150}>
+            <LiquidGlassCard style={{ marginBottom: 16 }}>
+              <View style={glassStyles.cardContent}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <View>
+                    <ThemedText style={[glassStyles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>
+                      2D Floor Plan
+                    </ThemedText>
+                    <ThemedText style={{ color: colors.placeholder, fontSize: 12 }}>
+                      Precise measurements • Millimeter accuracy
+                    </ThemedText>
+                  </View>
+                  <View style={[glassStyles.precisionBadge, { backgroundColor: colors.accentLight }]}>
+                    <Icon name="Target" size={12} color={colors.iconAccent} />
+                    <ThemedText style={{ color: colors.iconAccent, fontSize: 11, fontWeight: '600' }}>
+                      LiDAR
+                    </ThemedText>
+                  </View>
+                </View>
+                <FloorPlan2D
+                  roomData={roomData}
+                  width={SCREEN_WIDTH - 72}
+                  height={280}
+                  showMeasurements={true}
+                  showFurniture={true}
+                />
               </View>
             </LiquidGlassCard>
           </AnimatedView>
@@ -688,6 +776,14 @@ const glassStyles = StyleSheet.create({
   roomLabelText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  precisionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
   },
   sectionTitle: {
     fontSize: 18,

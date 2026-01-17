@@ -3,7 +3,7 @@ import { View, Animated, PanResponder, Pressable, Dimensions, StyleSheet, Scroll
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 import ThemedText from '@/components/ThemedText';
 import Icon from '@/components/Icon';
 

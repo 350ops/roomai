@@ -3,7 +3,7 @@ import React, { useRef, useState } from 'react';
 import { Button } from '@/components/Button';
 import { Image, Pressable, Text, TextInput, View } from 'react-native';
 import ThemedText from '@/components/ThemedText';
-import useThemeColors from '../contexts/ThemeColors';
+import useThemeColors from '../_contexts/ThemeColors';
 import Icon from '@/components/Icon';
 import ThemedFooter from '@/components/ThemeFooter';
 import ActionSheetThemed from '@/components/ActionSheetThemed';

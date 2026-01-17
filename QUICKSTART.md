@@ -1,4 +1,4 @@
-# Quick Start Guide - Bianco AI
+# Quick Start Guide - reForma
 
 ## ✅ What's Been Completed
 

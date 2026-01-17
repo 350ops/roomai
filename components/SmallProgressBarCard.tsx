@@ -1,6 +1,6 @@
 import { View, Animated } from "react-native";
 import ThemedText from "./ThemedText";
-import useThemeColors from "@/app/contexts/ThemeColors";
+import useThemeColors from "@/app/_contexts/ThemeColors";
 import { useRef, useCallback } from "react";
 import Icon from "./Icon";
 import { useFocusEffect } from "@react-navigation/native";

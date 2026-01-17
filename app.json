@@ -1,11 +1,11 @@
 {
   "expo": {
     "newArchEnabled": true,
-    "name": "Bianco AI",
-    "slug": "bianco-ai",
+    "name": "reForma",
+    "slug": "reforma",
     "version": "1.0.0",
     "runtimeVersion": "1.0.0",
-    "scheme": "biancoai",
+    "scheme": "reforma",
     "platforms": [
       "ios"
     ],
@@ -15,6 +15,14 @@
     "plugins": [
       "expo-router",
       "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ffffff",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200
+        }
+      ],
       [
         "expo-image-picker",
         {
@@ -46,7 +54,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -55,7 +63,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mmdev13.biancoai",
+      "bundleIdentifier": "com.mmdev13.reforma",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "This app needs access to your photos to select room images for AI renovation.",
@@ -101,8 +109,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "36162c2f-7925-496d-b3fd-aa091cc155e3"
+        "projectId": "81ab9df2-2916-468f-bc53-df92626bf312"
       }
-    }
+    },
+    "owner": "mmdev13"
   }
 }

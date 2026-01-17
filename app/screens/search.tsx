@@ -1,7 +1,7 @@
 
 import ThemedScroller from "@/components/ThemeScroller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import useThemeColors from "../contexts/ThemeColors";
+import useThemeColors from "../_contexts/ThemeColors";
 import { View, TextInput } from "react-native";
 import Icon from "@/components/Icon";
 import { router } from "expo-router";

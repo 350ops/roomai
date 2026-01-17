@@ -6,8 +6,8 @@ import { Link, useFocusEffect } from 'expo-router';
 import ThemedText from '@/components/ThemedText';
 import Icon from '@/components/Icon';
 import AnimatedView from '@/components/AnimatedView';
-import useThemeColors from '@/app/contexts/ThemeColors';
-import { loadDesigns, deleteDesign, SavedDesign } from '@/app/utils/designStorage';
+import useThemeColors from '@/app/_contexts/ThemeColors';
+import { loadDesigns, deleteDesign, SavedDesign } from '@/app/_utils/designStorage';
 
 export default function MyDesignsScreen() {
     const colors = useThemeColors();

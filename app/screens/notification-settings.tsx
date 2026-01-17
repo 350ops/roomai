@@ -4,7 +4,7 @@ import ThemedScroller from "@/components/ThemeScroller";
 import Section from "@/components/layout/Section";
 import { GlassToggle, GlassCard } from "../../components/LiquidGlass";
 import { useState } from "react";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme } from "../_contexts/ThemeContext";
 
 export default function NotificationSettingsScreen() {
     const [generationComplete, setGenerationComplete] = useState(true);

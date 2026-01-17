@@ -1,4 +1,4 @@
--- NovaHogar Project Estimates Schema
+-- reForma Project Estimates Schema
 -- Run this in your Supabase SQL Editor to create the required tables
 
 -- ============================================

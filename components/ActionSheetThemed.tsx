@@ -1,6 +1,6 @@
 import React, { forwardRef } from 'react';
 import ActionSheet, { ActionSheetProps, ActionSheetRef } from 'react-native-actions-sheet';
-import useThemeColors from '@/app/contexts/ThemeColors';
+import useThemeColors from '@/app/_contexts/ThemeColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ViewStyle } from 'react-native';
 
