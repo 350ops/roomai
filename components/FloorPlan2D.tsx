@@ -10,7 +10,6 @@ import Svg, {
   LinearGradient,
   Stop,
   Pattern,
-  Polygon,
 } from 'react-native-svg';
 import useThemeColors from '@/app/_contexts/ThemeColors';
 
@@ -65,70 +64,86 @@ const formatMeasurement = (meters: number): string => {
   return `${m}.${cm.toString().padStart(2, '0')}m`;
 };
 
-// Calculate distance between two points
-const distance = (p1: Point, p2: Point): number => {
-  return Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
+// Cross product for convex hull
+const cross = (o: Point, a: Point, b: Point): number => {
+  return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
 };
 
-// Sort points to form a closed polygon (nearest neighbor algorithm)
-const sortPointsForPolygon = (points: Point[]): Point[] => {
-  if (points.length <= 2) return points;
-  
-  const sorted: Point[] = [];
-  const remaining = [...points];
-  
-  // Start with the leftmost point
-  remaining.sort((a, b) => a.x - b.x);
-  sorted.push(remaining.shift()!);
-  
-  // Keep finding the nearest unvisited point
-  while (remaining.length > 0) {
-    const current = sorted[sorted.length - 1];
-    let nearestIdx = 0;
-    let nearestDist = Infinity;
-    
-    for (let i = 0; i < remaining.length; i++) {
-      const dist = distance(current, remaining[i]);
-      if (dist < nearestDist) {
-        nearestDist = dist;
-        nearestIdx = i;
-      }
+// Convex Hull using Andrew's monotone chain algorithm
+const convexHull = (points: Point[]): Point[] => {
+  if (points.length < 3) return points;
+
+  // Sort points by x, then by y
+  const sorted = [...points].sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
+
+  // Build lower hull
+  const lower: Point[] = [];
+  for (const p of sorted) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
+      lower.pop();
     }
-    
-    sorted.push(remaining.splice(nearestIdx, 1)[0]);
+    lower.push(p);
   }
-  
-  return sorted;
+
+  // Build upper hull
+  const upper: Point[] = [];
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const p = sorted[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
+      upper.pop();
+    }
+    upper.push(p);
+  }
+
+  // Remove last point of each half because it's repeated
+  lower.pop();
+  upper.pop();
+
+  return [...lower, ...upper];
 };
 
-// Simplify polygon by removing collinear points
-const simplifyPolygon = (points: Point[], tolerance: number = 5): Point[] => {
-  if (points.length <= 3) return points;
-  
-  const simplified: Point[] = [points[0]];
-  
-  for (let i = 1; i < points.length - 1; i++) {
-    const prev = simplified[simplified.length - 1];
+// Smooth corners by adding intermediate points
+const smoothPolygon = (points: Point[], cornerRadius: number): string => {
+  if (points.length < 3) return '';
+
+  const path: string[] = [];
+  const n = points.length;
+
+  for (let i = 0; i < n; i++) {
+    const prev = points[(i - 1 + n) % n];
     const curr = points[i];
-    const next = points[i + 1];
-    
-    // Check if current point is significantly different from the line prev->next
-    const dx1 = curr.x - prev.x;
-    const dy1 = curr.y - prev.y;
-    const dx2 = next.x - prev.x;
-    const dy2 = next.y - prev.y;
-    
-    const cross = Math.abs(dx1 * dy2 - dy1 * dx2);
-    const len = Math.sqrt(dx2 * dx2 + dy2 * dy2);
-    const dist = cross / (len || 1);
-    
-    if (dist > tolerance) {
-      simplified.push(curr);
+    const next = points[(i + 1) % n];
+
+    // Calculate vectors
+    const v1 = { x: prev.x - curr.x, y: prev.y - curr.y };
+    const v2 = { x: next.x - curr.x, y: next.y - curr.y };
+
+    // Normalize vectors
+    const len1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
+    const len2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+
+    if (len1 === 0 || len2 === 0) continue;
+
+    const n1 = { x: v1.x / len1, y: v1.y / len1 };
+    const n2 = { x: v2.x / len2, y: v2.y / len2 };
+
+    // Calculate corner points
+    const radius = Math.min(cornerRadius, len1 / 2, len2 / 2);
+    const p1 = { x: curr.x + n1.x * radius, y: curr.y + n1.y * radius };
+    const p2 = { x: curr.x + n2.x * radius, y: curr.y + n2.y * radius };
+
+    if (i === 0) {
+      path.push(`M ${p1.x} ${p1.y}`);
+    } else {
+      path.push(`L ${p1.x} ${p1.y}`);
     }
+
+    // Add quadratic curve for corner
+    path.push(`Q ${curr.x} ${curr.y} ${p2.x} ${p2.y}`);
   }
-  
-  simplified.push(points[points.length - 1]);
-  return simplified;
+
+  path.push('Z');
+  return path.join(' ');
 };
 
 export default function FloorPlan2D({
@@ -156,7 +171,6 @@ export default function FloorPlan2D({
     const doors = roomData.doors || [];
     const windows = roomData.windows || [];
     const objects = roomData.objects || [];
-    const floors = roomData.floors || [];
 
     // Collect all wall corner points
     const allCorners: { x: number; z: number }[] = [];
@@ -173,9 +187,14 @@ export default function FloorPlan2D({
       const dx = Math.cos(radians) * halfLength;
       const dz = Math.sin(radians) * halfLength;
       
+      // Add both endpoints of the wall
       allCorners.push({ x: pos.x - dx, z: pos.z - dz });
       allCorners.push({ x: pos.x + dx, z: pos.z + dz });
     });
+
+    if (allCorners.length === 0) {
+      return null;
+    }
 
     // Calculate bounding box
     let minX = Infinity, maxX = -Infinity;
@@ -189,64 +208,35 @@ export default function FloorPlan2D({
     });
 
     // Add padding
-    const padding = 1.0;
-    minX -= padding;
-    maxX += padding;
-    minZ -= padding;
-    maxZ += padding;
+    const padding = 0.5;
+    const paddedMinX = minX - padding;
+    const paddedMaxX = maxX + padding;
+    const paddedMinZ = minZ - padding;
+    const paddedMaxZ = maxZ + padding;
 
-    const roomWidth = maxX - minX;
-    const roomDepth = maxZ - minZ;
+    const totalWidth = paddedMaxX - paddedMinX;
+    const totalDepth = paddedMaxZ - paddedMinZ;
 
     // Calculate scale
-    const marginX = 55;
-    const marginY = 65;
-    const scaleX = (width - marginX * 2) / roomWidth;
-    const scaleZ = (height - marginY * 2) / roomDepth;
+    const marginX = 50;
+    const marginY = 55;
+    const scaleX = (width - marginX * 2) / totalWidth;
+    const scaleZ = (height - marginY * 2) / totalDepth;
     const scale = Math.min(scaleX, scaleZ);
 
-    const offsetX = (width - roomWidth * scale) / 2;
-    const offsetZ = (height - roomDepth * scale) / 2;
+    const offsetX = (width - totalWidth * scale) / 2;
+    const offsetZ = (height - totalDepth * scale) / 2;
 
     const toScreen = (worldX: number, worldZ: number): Point => ({
-      x: (worldX - minX) * scale + offsetX,
-      y: (worldZ - minZ) * scale + offsetZ,
+      x: (worldX - paddedMinX) * scale + offsetX,
+      y: (worldZ - paddedMinZ) * scale + offsetZ,
     });
 
     // Convert corners to screen coordinates
     const screenCorners = allCorners.map(c => toScreen(c.x, c.z));
     
-    // Sort corners to form a closed polygon
-    const sortedCorners = sortPointsForPolygon(screenCorners);
-    
-    // Simplify to remove redundant points
-    const roomOutline = simplifyPolygon(sortedCorners, 8);
-
-    // Process individual walls for segment info
-    const wallSegments = walls.map((wall) => {
-      const pos = getPosition(wall.transform);
-      const dims = wall.dimensions || [0, 0, 0];
-      const rotation = getRotation(wall.transform);
-      const radians = (rotation * Math.PI) / 180;
-      
-      if (!pos) return null;
-
-      const halfLength = dims[0] / 2;
-      const dx = Math.cos(radians) * halfLength;
-      const dz = Math.sin(radians) * halfLength;
-      
-      const start = toScreen(pos.x - dx, pos.z - dz);
-      const end = toScreen(pos.x + dx, pos.z + dz);
-      const center = toScreen(pos.x, pos.z);
-
-      return {
-        start,
-        end,
-        center,
-        length: dims[0],
-        rotation,
-      };
-    }).filter(Boolean);
+    // Use convex hull to get proper room outline
+    const roomOutline = convexHull(screenCorners);
 
     // Process doors
     const processedDoors = doors.map((door) => {
@@ -257,7 +247,7 @@ export default function FloorPlan2D({
       if (!pos) return null;
 
       const screenPos = toScreen(pos.x, pos.z);
-      const doorWidth = Math.max(dims[0] * scale, 25);
+      const doorWidth = Math.max(dims[0] * scale, 20);
 
       return {
         x: screenPos.x,
@@ -277,7 +267,7 @@ export default function FloorPlan2D({
       if (!pos) return null;
 
       const screenPos = toScreen(pos.x, pos.z);
-      const windowWidth = Math.max(dims[0] * scale, 20);
+      const windowWidth = Math.max(dims[0] * scale, 16);
 
       return {
         x: screenPos.x,
@@ -302,20 +292,19 @@ export default function FloorPlan2D({
       return {
         x: screenPos.x,
         y: screenPos.y,
-        width: Math.max(dims[0] * scale, 24),
-        depth: Math.max((dims[2] || dims[0]) * scale, 24),
+        width: Math.max(dims[0] * scale, 20),
+        depth: Math.max((dims[2] || dims[0]) * scale, 20),
         rotation,
         category,
       };
     }).filter(Boolean);
 
-    // Calculate actual room dimensions (from wall extremes)
-    const actualWidth = maxX - minX - padding * 2;
-    const actualDepth = maxZ - minZ - padding * 2;
+    // Calculate actual room dimensions
+    const actualWidth = maxX - minX;
+    const actualDepth = maxZ - minZ;
 
     return {
       roomOutline,
-      wallSegments,
       doors: processedDoors,
       windows: processedWindows,
       objects: processedObjects,
@@ -324,101 +313,75 @@ export default function FloorPlan2D({
       scale,
       offsetX,
       offsetZ,
-      bounds: { minX, maxX, minZ, maxZ },
+      screenWidth: totalWidth * scale,
+      screenDepth: totalDepth * scale,
     };
   }, [roomData, width, height]);
 
+  if (!processedData) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.isDark ? '#1A1A1C' : '#F8F9FA' }]}>
+        <Svg width={width} height={height}>
+          <SvgText x={width / 2} y={height / 2} fontSize={14} fill={colors.placeholder} textAnchor="middle">
+            No room data available
+          </SvgText>
+        </Svg>
+      </View>
+    );
+  }
+
   // Theme colors
   const isDark = colors.isDark;
-  const bgColor = isDark ? '#1A1A1C' : '#F8F9FA';
-  const floorColor = isDark ? '#252528' : '#FFFFFF';
-  const wallColor = isDark ? '#D1D1D6' : '#2C3E50';
-  const wallFillColor = isDark ? '#3A3A3C' : '#34495E';
-  const doorColor = '#27AE60';
+  const bgColor = isDark ? '#1A1A1C' : '#F5F7FA';
+  const floorColor = isDark ? '#2A2A2E' : '#FFFFFF';
+  const wallColor = isDark ? '#E0E0E5' : '#3D5A80';
+  const wallStroke = isDark ? '#4A4A4E' : '#2D4A6F';
+  const doorColor = '#2ECC71';
   const windowColor = '#3498DB';
-  const furnitureColor = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(44,62,80,0.08)';
-  const furnitureStroke = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(44,62,80,0.2)';
-  const textColor = isDark ? '#8E8E93' : '#7F8C8D';
+  const furnitureColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(61,90,128,0.08)';
+  const furnitureStroke = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(61,90,128,0.15)';
+  const textColor = isDark ? '#8E8E93' : '#6B7C8F';
   const accentColor = isDark ? '#0A84FF' : '#3498DB';
-  const gridColor = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
+  const gridColor = isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
 
-  // Create room outline path
-  const outlinePath = processedData.roomOutline.length > 2
-    ? `M ${processedData.roomOutline.map(p => `${p.x},${p.y}`).join(' L ')} Z`
-    : '';
+  // Create smooth room path
+  const roomPath = smoothPolygon(processedData.roomOutline, 8);
+  const wallThickness = 10;
 
-  // Wall thickness for outline
-  const wallThickness = 8;
-
-  // Render furniture with proper icons
+  // Render furniture
   const renderFurniture = (obj: any, index: number) => {
     const { x, y, width: w, depth: d, rotation, category } = obj;
     
-    const baseProps = {
-      fill: furnitureColor,
-      stroke: furnitureStroke,
-      strokeWidth: 1,
-    };
-
-    switch (category.toLowerCase()) {
-      case 'sofa':
-        return (
-          <G key={`f-${index}`} rotation={rotation} origin={`${x}, ${y}`}>
-            <Rect x={x - w/2} y={y - d/2} width={w} height={d} rx={4} {...baseProps} />
-            <Rect x={x - w/2 + 3} y={y - d/2 + 3} width={w - 6} height={d * 0.35} rx={2} 
-              fill={isDark ? 'rgba(255,255,255,0.08)' : 'rgba(44,62,80,0.05)'} />
-            <Rect x={x - w/2 + 3} y={y - d/2 + 3} width={w * 0.15} height={d - 6} rx={2}
-              fill={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(44,62,80,0.04)'} />
-            <Rect x={x + w/2 - w * 0.15 - 3} y={y - d/2 + 3} width={w * 0.15} height={d - 6} rx={2}
-              fill={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(44,62,80,0.04)'} />
-          </G>
-        );
-      case 'bed':
-        return (
-          <G key={`f-${index}`} rotation={rotation} origin={`${x}, ${y}`}>
-            <Rect x={x - w/2} y={y - d/2} width={w} height={d} rx={3} {...baseProps} />
-            <Rect x={x - w/2 + 4} y={y - d/2 + 4} width={w/2 - 6} height={d * 0.2} rx={2}
-              fill={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(44,62,80,0.08)'} stroke="none" />
-            <Rect x={x + 2} y={y - d/2 + 4} width={w/2 - 6} height={d * 0.2} rx={2}
-              fill={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(44,62,80,0.08)'} stroke="none" />
-            <Line x1={x - w/2 + 4} y1={y + d/2 - 4} x2={x + w/2 - 4} y2={y + d/2 - 4}
-              stroke={furnitureStroke} strokeWidth={1} />
-          </G>
-        );
-      case 'table':
-        return (
-          <G key={`f-${index}`} rotation={rotation} origin={`${x}, ${y}`}>
-            <Rect x={x - w/2} y={y - d/2} width={w} height={d} rx={2}
-              fill="none" stroke={furnitureStroke} strokeWidth={1.5} />
-            <Line x1={x - w/2 + 4} y1={y - d/2 + 4} x2={x + w/2 - 4} y2={y + d/2 - 4}
-              stroke={furnitureStroke} strokeWidth={0.5} opacity={0.5} />
-            <Line x1={x + w/2 - 4} y1={y - d/2 + 4} x2={x - w/2 + 4} y2={y + d/2 - 4}
-              stroke={furnitureStroke} strokeWidth={0.5} opacity={0.5} />
-          </G>
-        );
-      case 'chair':
-        return (
-          <G key={`f-${index}`} rotation={rotation} origin={`${x}, ${y}`}>
-            <Rect x={x - w/2} y={y - d/2} width={w} height={d} rx={3} {...baseProps} />
-            <Rect x={x - w/2 + 2} y={y - d/2 + 2} width={w - 4} height={d * 0.3} rx={1}
-              fill={isDark ? 'rgba(255,255,255,0.08)' : 'rgba(44,62,80,0.06)'} stroke="none" />
-          </G>
-        );
-      case 'storage':
-        return (
-          <G key={`f-${index}`} rotation={rotation} origin={`${x}, ${y}`}>
-            <Rect x={x - w/2} y={y - d/2} width={w} height={d} rx={2} {...baseProps} />
-            <Line x1={x - w/2} y1={y} x2={x + w/2} y2={y} stroke={furnitureStroke} strokeWidth={0.5} />
-            <Line x1={x} y1={y - d/2} x2={x} y2={y + d/2} stroke={furnitureStroke} strokeWidth={0.5} />
-          </G>
-        );
-      default:
-        return (
-          <G key={`f-${index}`} rotation={rotation} origin={`${x}, ${y}`}>
-            <Rect x={x - w/2} y={y - d/2} width={w} height={d} rx={3} {...baseProps} strokeDasharray="4,2" />
-          </G>
-        );
-    }
+    return (
+      <G key={`f-${index}`} rotation={rotation} origin={`${x}, ${y}`}>
+        <Rect
+          x={x - w / 2}
+          y={y - d / 2}
+          width={w}
+          height={d}
+          rx={3}
+          fill={furnitureColor}
+          stroke={furnitureStroke}
+          strokeWidth={1}
+        />
+        {category === 'sofa' && (
+          <Rect
+            x={x - w / 2 + 2}
+            y={y - d / 2 + 2}
+            width={w - 4}
+            height={d * 0.3}
+            rx={2}
+            fill={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(61,90,128,0.04)'}
+          />
+        )}
+        {category === 'table' && (
+          <>
+            <Line x1={x - w / 3} y1={y - d / 3} x2={x + w / 3} y2={y + d / 3} stroke={furnitureStroke} strokeWidth={0.5} />
+            <Line x1={x + w / 3} y1={y - d / 3} x2={x - w / 3} y2={y + d / 3} stroke={furnitureStroke} strokeWidth={0.5} />
+          </>
+        )}
+      </G>
+    );
   };
 
   return (
@@ -426,65 +389,67 @@ export default function FloorPlan2D({
       <Svg width={width} height={height}>
         <Defs>
           {/* Floor grid pattern */}
-          <Pattern id="floorGrid" width={24} height={24} patternUnits="userSpaceOnUse">
-            <Rect width={24} height={24} fill={floorColor} />
-            <Path d="M 24 0 L 0 0 0 24" fill="none" stroke={gridColor} strokeWidth={1} />
+          <Pattern id="floorGrid" width={20} height={20} patternUnits="userSpaceOnUse">
+            <Rect width={20} height={20} fill={floorColor} />
+            <Path d="M 20 0 L 0 0 0 20" fill="none" stroke={gridColor} strokeWidth={0.5} />
           </Pattern>
           
-          {/* Wall gradient for 3D effect */}
-          <LinearGradient id="wallGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          {/* Wall gradient */}
+          <LinearGradient id="wallGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <Stop offset="0%" stopColor={wallColor} />
-            <Stop offset="100%" stopColor={wallFillColor} />
+            <Stop offset="100%" stopColor={wallStroke} />
           </LinearGradient>
         </Defs>
 
         {/* Background */}
         <Rect x={0} y={0} width={width} height={height} fill={bgColor} />
 
-        {/* Room floor (inside walls) */}
-        {outlinePath && (
-          <Path
-            d={outlinePath}
-            fill="url(#floorGrid)"
-            stroke="none"
-          />
-        )}
+        {/* Room floor */}
+        <Path d={roomPath} fill="url(#floorGrid)" />
 
-        {/* Room walls - outer stroke for thickness effect */}
-        {outlinePath && (
-          <>
-            {/* Wall shadow */}
-            <Path
-              d={outlinePath}
-              fill="none"
-              stroke={isDark ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.15)'}
-              strokeWidth={wallThickness + 4}
-              strokeLinejoin="round"
-              transform="translate(2, 2)"
-            />
-            {/* Main wall */}
-            <Path
-              d={outlinePath}
-              fill="none"
-              stroke="url(#wallGrad)"
-              strokeWidth={wallThickness}
-              strokeLinejoin="round"
-            />
-            {/* Inner highlight */}
-            <Path
-              d={outlinePath}
-              fill="none"
-              stroke={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)'}
-              strokeWidth={2}
-              strokeLinejoin="round"
-            />
-          </>
-        )}
+        {/* Room walls with 3D effect */}
+        {/* Shadow */}
+        <Path
+          d={roomPath}
+          fill="none"
+          stroke={isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.2)'}
+          strokeWidth={wallThickness + 4}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          transform="translate(2, 2)"
+        />
+        {/* Main wall */}
+        <Path
+          d={roomPath}
+          fill="none"
+          stroke="url(#wallGrad)"
+          strokeWidth={wallThickness}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        {/* Inner highlight */}
+        <Path
+          d={roomPath}
+          fill="none"
+          stroke={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.7)'}
+          strokeWidth={3}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        {/* Outer edge */}
+        <Path
+          d={roomPath}
+          fill="none"
+          stroke={isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.15)'}
+          strokeWidth={1}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
 
         {/* Doors */}
         {processedData.doors.map((door: any, index) => (
           <G key={`door-${index}`} rotation={door.rotation} origin={`${door.x}, ${door.y}`}>
-            {/* Door opening (gap in wall) */}
+            {/* Door opening */}
             <Rect
               x={door.x - door.width / 2 - 2}
               y={door.y - wallThickness / 2 - 2}
@@ -492,49 +457,24 @@ export default function FloorPlan2D({
               height={wallThickness + 4}
               fill={floorColor}
             />
-            {/* Door threshold */}
-            <Rect
-              x={door.x - door.width / 2}
-              y={door.y - 1}
-              width={door.width}
-              height={2}
-              fill={doorColor}
-              opacity={0.3}
-            />
-            {/* Door frame left */}
-            <Rect
-              x={door.x - door.width / 2 - 2}
-              y={door.y - wallThickness / 2}
-              width={3}
-              height={wallThickness}
-              fill={doorColor}
-              rx={1}
-            />
-            {/* Door frame right */}
-            <Rect
-              x={door.x + door.width / 2 - 1}
-              y={door.y - wallThickness / 2}
-              width={3}
-              height={wallThickness}
-              fill={doorColor}
-              rx={1}
-            />
-            {/* Door swing arc */}
+            {/* Door frame */}
+            <Rect x={door.x - door.width / 2 - 2} y={door.y - 4} width={3} height={8} fill={doorColor} rx={1} />
+            <Rect x={door.x + door.width / 2 - 1} y={door.y - 4} width={3} height={8} fill={doorColor} rx={1} />
+            {/* Door arc */}
             <Path
-              d={`M ${door.x - door.width / 2} ${door.y + wallThickness / 2 + 2}
-                  A ${door.width * 0.85} ${door.width * 0.85} 0 0 0 
-                  ${door.x - door.width / 2 + door.width * 0.6} ${door.y + wallThickness / 2 + door.width * 0.65}`}
+              d={`M ${door.x - door.width / 2} ${door.y + 5}
+                  A ${door.width * 0.8} ${door.width * 0.8} 0 0 0 
+                  ${door.x - door.width / 2 + door.width * 0.6} ${door.y + 5 + door.width * 0.6}`}
               stroke={doorColor}
               strokeWidth={1.5}
               fill="none"
-              opacity={0.7}
+              opacity={0.6}
             />
-            {/* Door panel */}
             <Line
               x1={door.x - door.width / 2}
-              y1={door.y + wallThickness / 2 + 2}
+              y1={door.y + 5}
               x2={door.x - door.width / 2 + door.width * 0.6}
-              y2={door.y + wallThickness / 2 + door.width * 0.65}
+              y2={door.y + 5 + door.width * 0.6}
               stroke={doorColor}
               strokeWidth={2}
               strokeLinecap="round"
@@ -559,7 +499,7 @@ export default function FloorPlan2D({
               y={window.y - 2}
               width={window.width}
               height={4}
-              fill={isDark ? 'rgba(52,152,219,0.2)' : 'rgba(52,152,219,0.15)'}
+              fill={isDark ? 'rgba(52,152,219,0.15)' : 'rgba(52,152,219,0.1)'}
               rx={1}
             />
             {/* Window frame */}
@@ -573,34 +513,8 @@ export default function FloorPlan2D({
               strokeWidth={1.5}
               rx={1}
             />
-            {/* Window pane divider */}
-            <Line
-              x1={window.x}
-              y1={window.y - 2}
-              x2={window.x}
-              y2={window.y + 2}
-              stroke={windowColor}
-              strokeWidth={1}
-            />
-            {/* Glass effect lines */}
-            <Line
-              x1={window.x - window.width / 4}
-              y1={window.y - 1}
-              x2={window.x - window.width / 4}
-              y2={window.y + 1}
-              stroke={windowColor}
-              strokeWidth={0.5}
-              opacity={0.5}
-            />
-            <Line
-              x1={window.x + window.width / 4}
-              y1={window.y - 1}
-              x2={window.x + window.width / 4}
-              y2={window.y + 1}
-              stroke={windowColor}
-              strokeWidth={0.5}
-              opacity={0.5}
-            />
+            {/* Pane divider */}
+            <Line x1={window.x} y1={window.y - 2} x2={window.x} y2={window.y + 2} stroke={windowColor} strokeWidth={1} />
           </G>
         ))}
 
@@ -614,24 +528,21 @@ export default function FloorPlan2D({
             <G>
               <Line
                 x1={processedData.offsetX}
-                y1={height - 32}
-                x2={processedData.offsetX + processedData.roomWidth * processedData.scale}
-                y2={height - 32}
+                y1={height - 28}
+                x2={processedData.offsetX + processedData.screenWidth}
+                y2={height - 28}
                 stroke={accentColor}
                 strokeWidth={1.5}
-                strokeLinecap="round"
               />
-              <Line x1={processedData.offsetX} y1={height - 38} x2={processedData.offsetX} y2={height - 26}
-                stroke={accentColor} strokeWidth={1.5} strokeLinecap="round" />
-              <Line x1={processedData.offsetX + processedData.roomWidth * processedData.scale} y1={height - 38}
-                x2={processedData.offsetX + processedData.roomWidth * processedData.scale} y2={height - 26}
-                stroke={accentColor} strokeWidth={1.5} strokeLinecap="round" />
+              {/* End caps */}
+              <Line x1={processedData.offsetX} y1={height - 34} x2={processedData.offsetX} y2={height - 22} stroke={accentColor} strokeWidth={1.5} />
+              <Line x1={processedData.offsetX + processedData.screenWidth} y1={height - 34} x2={processedData.offsetX + processedData.screenWidth} y2={height - 22} stroke={accentColor} strokeWidth={1.5} />
               {/* Arrows */}
-              <Path d={`M ${processedData.offsetX} ${height - 32} l 6 -3 l 0 6 z`} fill={accentColor} />
-              <Path d={`M ${processedData.offsetX + processedData.roomWidth * processedData.scale} ${height - 32} l -6 -3 l 0 6 z`} fill={accentColor} />
+              <Path d={`M ${processedData.offsetX + 1} ${height - 28} l 5 -3 v 6 z`} fill={accentColor} />
+              <Path d={`M ${processedData.offsetX + processedData.screenWidth - 1} ${height - 28} l -5 -3 v 6 z`} fill={accentColor} />
               {/* Label */}
-              <Rect x={width / 2 - 28} y={height - 22} width={56} height={20} rx={4} fill={bgColor} />
-              <SvgText x={width / 2} y={height - 8} fontSize={12} fill={accentColor} textAnchor="middle" fontWeight="700">
+              <Rect x={width / 2 - 25} y={height - 18} width={50} height={16} rx={4} fill={bgColor} />
+              <SvgText x={width / 2} y={height - 6} fontSize={11} fill={accentColor} textAnchor="middle" fontWeight="700">
                 {formatMeasurement(processedData.roomWidth)}
               </SvgText>
             </G>
@@ -639,26 +550,23 @@ export default function FloorPlan2D({
             {/* Depth dimension (right) */}
             <G>
               <Line
-                x1={width - 32}
+                x1={width - 28}
                 y1={processedData.offsetZ}
-                x2={width - 32}
-                y2={processedData.offsetZ + processedData.roomDepth * processedData.scale}
+                x2={width - 28}
+                y2={processedData.offsetZ + processedData.screenDepth}
                 stroke={accentColor}
                 strokeWidth={1.5}
-                strokeLinecap="round"
               />
-              <Line x1={width - 38} y1={processedData.offsetZ} x2={width - 26} y2={processedData.offsetZ}
-                stroke={accentColor} strokeWidth={1.5} strokeLinecap="round" />
-              <Line x1={width - 38} y1={processedData.offsetZ + processedData.roomDepth * processedData.scale}
-                x2={width - 26} y2={processedData.offsetZ + processedData.roomDepth * processedData.scale}
-                stroke={accentColor} strokeWidth={1.5} strokeLinecap="round" />
+              {/* End caps */}
+              <Line x1={width - 34} y1={processedData.offsetZ} x2={width - 22} y2={processedData.offsetZ} stroke={accentColor} strokeWidth={1.5} />
+              <Line x1={width - 34} y1={processedData.offsetZ + processedData.screenDepth} x2={width - 22} y2={processedData.offsetZ + processedData.screenDepth} stroke={accentColor} strokeWidth={1.5} />
               {/* Arrows */}
-              <Path d={`M ${width - 32} ${processedData.offsetZ} l -3 6 l 6 0 z`} fill={accentColor} />
-              <Path d={`M ${width - 32} ${processedData.offsetZ + processedData.roomDepth * processedData.scale} l -3 -6 l 6 0 z`} fill={accentColor} />
+              <Path d={`M ${width - 28} ${processedData.offsetZ + 1} l -3 5 h 6 z`} fill={accentColor} />
+              <Path d={`M ${width - 28} ${processedData.offsetZ + processedData.screenDepth - 1} l -3 -5 h 6 z`} fill={accentColor} />
               {/* Label */}
-              <G rotation={-90} origin={`${width - 12}, ${height / 2}`}>
-                <Rect x={width - 40} y={height / 2 - 10} width={56} height={20} rx={4} fill={bgColor} />
-                <SvgText x={width - 12} y={height / 2 + 4} fontSize={12} fill={accentColor} textAnchor="middle" fontWeight="700">
+              <G rotation={-90} origin={`${width - 10}, ${(processedData.offsetZ * 2 + processedData.screenDepth) / 2}`}>
+                <Rect x={width - 35} y={(processedData.offsetZ * 2 + processedData.screenDepth) / 2 - 8} width={50} height={16} rx={4} fill={bgColor} />
+                <SvgText x={width - 10} y={(processedData.offsetZ * 2 + processedData.screenDepth) / 2 + 4} fontSize={11} fill={accentColor} textAnchor="middle" fontWeight="700">
                   {formatMeasurement(processedData.roomDepth)}
                 </SvgText>
               </G>
@@ -668,34 +576,28 @@ export default function FloorPlan2D({
 
         {/* Legend */}
         <G>
-          <Rect x={10} y={10} width={115} height={28} rx={8} fill={isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.9)'} />
+          <Rect x={10} y={10} width={100} height={26} rx={6} fill={isDark ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.9)'} />
           {/* Door */}
-          <Rect x={18} y={20} width={12} height={8} rx={1} fill={doorColor} opacity={0.8} />
-          <SvgText x={35} y={27} fontSize={10} fill={textColor} fontWeight="500">Door</SvgText>
+          <Rect x={18} y={18} width={10} height={8} rx={1} fill={doorColor} />
+          <SvgText x={33} y={26} fontSize={10} fill={textColor} fontWeight="500">Door</SvgText>
           {/* Window */}
-          <Rect x={68} y={20} width={14} height={6} rx={1} fill="none" stroke={windowColor} strokeWidth={1.5} />
-          <SvgText x={88} y={27} fontSize={10} fill={textColor} fontWeight="500">Win</SvgText>
+          <Rect x={62} y={19} width={12} height={5} rx={1} fill="none" stroke={windowColor} strokeWidth={1.5} />
+          <SvgText x={80} y={26} fontSize={10} fill={textColor} fontWeight="500">Win</SvgText>
         </G>
 
         {/* Scale bar */}
         <G>
-          <Rect x={10} y={height - 38} width={75} height={26} rx={8} fill={isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.9)'} />
-          <Line x1={18} y1={height - 22} x2={18 + processedData.scale} y2={height - 22}
-            stroke={textColor} strokeWidth={2} strokeLinecap="round" />
-          <Line x1={18} y1={height - 27} x2={18} y2={height - 17} stroke={textColor} strokeWidth={1.5} />
-          <Line x1={18 + processedData.scale} y1={height - 27} x2={18 + processedData.scale} y2={height - 17}
-            stroke={textColor} strokeWidth={1.5} />
-          <SvgText x={18 + processedData.scale + 8} y={height - 18} fontSize={11} fill={textColor} fontWeight="600">
-            1m
-          </SvgText>
+          <Rect x={10} y={height - 34} width={70} height={24} rx={6} fill={isDark ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.9)'} />
+          <Line x1={18} y1={height - 18} x2={18 + processedData.scale} y2={height - 18} stroke={textColor} strokeWidth={2} strokeLinecap="round" />
+          <Line x1={18} y1={height - 24} x2={18} y2={height - 12} stroke={textColor} strokeWidth={1.5} />
+          <Line x1={18 + processedData.scale} y1={height - 24} x2={18 + processedData.scale} y2={height - 12} stroke={textColor} strokeWidth={1.5} />
+          <SvgText x={18 + processedData.scale + 8} y={height - 14} fontSize={10} fill={textColor} fontWeight="600">1m</SvgText>
         </G>
 
         {/* Precision badge */}
         <G>
-          <Rect x={width - 70} y={10} width={60} height={22} rx={6} fill={accentColor} opacity={0.15} />
-          <SvgText x={width - 40} y={25} fontSize={10} fill={accentColor} textAnchor="middle" fontWeight="600">
-            ± 1-2cm
-          </SvgText>
+          <Rect x={width - 65} y={10} width={55} height={20} rx={5} fill={accentColor} opacity={0.12} />
+          <SvgText x={width - 38} y={24} fontSize={9} fill={accentColor} textAnchor="middle" fontWeight="600">± 1-2cm</SvgText>
         </G>
       </Svg>
     </View>
@@ -704,9 +606,9 @@ export default function FloorPlan2D({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 14,
+    borderRadius: 12,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(0,0,0,0.08)',
   },
 });

@@ -12,9 +12,11 @@ import BeforeAfterSlider from '@/components/BeforeAfterSlider';
 import WebView3DModel from '@/components/WebView3DModel';
 import { useLanguage } from '@/app/_contexts/LanguageContext';
 
-// 3D furniture models hosted on GitHub
+// 3D furniture models from TinyGLB
 const FURNITURE_3D_MODELS = [
-  'https://raw.githubusercontent.com/350ops/3dar/main/Untitled232.glb',
+  'https://cdn.tinyglb.com/models/7d7bbf4c7dc64c63b6682e54107a12bd.glb',
+  'https://cdn.tinyglb.com/models/448daa85f82d4b6a8161082c40ac0ef7.glb',
+  'https://cdn.tinyglb.com/models/f17a8822499146be98f59b2f787eb51d.glb',
 ];
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
