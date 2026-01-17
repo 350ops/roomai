@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Pressable, Alert, ScrollView, StyleSheet, Platform, Dimensions } from "react-native";
+import { View, Pressable, Alert, ScrollView, StyleSheet, Platform, Dimensions, ActivityIndicator } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { File } from "expo-file-system/next";
@@ -93,6 +93,7 @@ export default function ScanResultsScreen() {
   
   const [roomData, setRoomData] = useState<RoomPlanData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isOpening3DModel, setIsOpening3DModel] = useState(false);
 
   // Liquid Glass Card Component
   const LiquidGlassCard = ({ children, style }: { children: React.ReactNode; style?: object }) => {
@@ -137,23 +138,53 @@ export default function ScanResultsScreen() {
     title, 
     icon,
     variant = 'primary',
-    flex = false
+    flex = false,
+    loading = false,
+    disabled = false
   }: { 
     onPress: () => void; 
     title: string; 
     icon?: string;
     variant?: 'primary' | 'secondary' | 'outline';
     flex?: boolean;
+    loading?: boolean;
+    disabled?: boolean;
   }) => {
     const blueColor = colors.isDark ? PRIMARY_BLUE_DARK : PRIMARY_BLUE;
     const isPrimary = variant === 'primary';
     const isOutline = variant === 'outline';
+    const isDisabled = loading || disabled;
+
+    const buttonContent = (
+      <View style={glassStyles.buttonContent}>
+        {loading ? (
+          <ActivityIndicator size="small" color={isPrimary ? '#FFFFFF' : colors.text} />
+        ) : (
+          <>
+            {icon && (
+              <Icon 
+                name={icon as any} 
+                size={isPrimary ? 22 : 18} 
+                color={isPrimary ? '#FFFFFF' : colors.text} 
+              />
+            )}
+            <ThemedText style={[
+              glassStyles.buttonText, 
+              { color: isPrimary ? '#FFFFFF' : colors.text },
+              !isPrimary && { fontSize: 15 }
+            ]}>
+              {title}
+            </ThemedText>
+          </>
+        )}
+      </View>
+    );
 
     if (supportsNativeLiquidGlass) {
       return (
         <Pressable 
-          onPress={onPress} 
-          style={[glassStyles.buttonOuter, flex && { flex: 1 }]}
+          onPress={isDisabled ? undefined : onPress} 
+          style={[glassStyles.buttonOuter, flex && { flex: 1 }, isDisabled && { opacity: 0.6 }]}
         >
           <GlassView
             style={[
@@ -165,22 +196,7 @@ export default function ScanResultsScreen() {
             tintColor={isPrimary ? blueColor : undefined}
             isInteractive
           >
-            <View style={glassStyles.buttonContent}>
-              {icon && (
-                <Icon 
-                  name={icon as any} 
-                  size={isPrimary ? 22 : 18} 
-                  color={isPrimary ? '#FFFFFF' : colors.text} 
-                />
-              )}
-              <ThemedText style={[
-                glassStyles.buttonText, 
-                { color: isPrimary ? '#FFFFFF' : colors.text },
-                !isPrimary && { fontSize: 15 }
-              ]}>
-                {title}
-              </ThemedText>
-            </View>
+            {buttonContent}
           </GlassView>
         </Pressable>
       );
@@ -188,8 +204,8 @@ export default function ScanResultsScreen() {
 
     return (
       <Pressable 
-        onPress={onPress} 
-        style={[glassStyles.buttonOuter, flex && { flex: 1 }]}
+        onPress={isDisabled ? undefined : onPress} 
+        style={[glassStyles.buttonOuter, flex && { flex: 1 }, isDisabled && { opacity: 0.6 }]}
       >
         <BlurView
           intensity={60}
@@ -212,22 +228,7 @@ export default function ScanResultsScreen() {
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
-          <View style={glassStyles.buttonContent}>
-            {icon && (
-              <Icon 
-                name={icon as any} 
-                size={isPrimary ? 22 : 18} 
-                color={isPrimary ? '#FFFFFF' : colors.text} 
-              />
-            )}
-            <ThemedText style={[
-              glassStyles.buttonText, 
-              { color: isPrimary ? '#FFFFFF' : colors.text },
-              !isPrimary && { fontSize: 15 }
-            ]}>
-              {title}
-            </ThemedText>
-          </View>
+          {buttonContent}
         </BlurView>
       </Pressable>
     );
@@ -354,34 +355,42 @@ export default function ScanResultsScreen() {
       return;
     }
 
+    // Prevent multiple taps
+    if (isOpening3DModel) return;
+    setIsOpening3DModel(true);
+
     try {
-      if (openFile) {
-        // Decode the URL in case it was encoded during navigation
-        const decodedUrl = decodeURIComponent(params.scanUrl);
-        const filePath = decodedUrl.replace("file://", "");
+      // Decode the URL in case it was encoded during navigation
+      const decodedUrl = decodeURIComponent(params.scanUrl);
+      
+      // Use expo-sharing as the primary method - it's more reliable
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (isAvailable) {
+        console.log("[Scan Results] Opening 3D model via sharing:", decodedUrl);
         
-        console.log("[Scan Results] Opening 3D model:", filePath);
+        // Add a small timeout to ensure UI updates before native call
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        await Sharing.shareAsync(decodedUrl, {
+          mimeType: "model/vnd.usdz+zip",
+          dialogTitle: "Room 3D Model",
+          UTI: "com.pixar.universal-scene-description-mobile",
+        });
+      } else if (openFile) {
+        // Fallback to file viewer if sharing isn't available
+        const filePath = decodedUrl.replace("file://", "");
+        console.log("[Scan Results] Opening 3D model via file viewer:", filePath);
         
         await openFile(filePath, {
           displayName: "Room 3D Model",
           showOpenWithDialog: false,
           onDismiss: () => {
             console.log("[Scan Results] Quick Look dismissed");
+            setIsOpening3DModel(false);
           },
         });
       } else {
-        // Fallback to expo-sharing
-        const isAvailable = await Sharing.isAvailableAsync();
-        if (isAvailable) {
-          const decodedUrl = decodeURIComponent(params.scanUrl);
-          await Sharing.shareAsync(decodedUrl, {
-            mimeType: "model/vnd.usdz+zip",
-            dialogTitle: "Room 3D Model",
-            UTI: "com.pixar.universal-scene-description-mobile",
-          });
-        } else {
-          Alert.alert("Not Available", "File sharing is not available on this device.");
-        }
+        Alert.alert("Not Available", "3D model viewing is not available on this device.");
       }
     } catch (error: any) {
       // Don't show error if user just dismissed the viewer
@@ -390,7 +399,9 @@ export default function ScanResultsScreen() {
         return;
       }
       console.error("[Scan Results] Failed to open 3D model:", error);
-      Alert.alert("Error", "Failed to open 3D model viewer.");
+      Alert.alert("Error", "Failed to open 3D model viewer. Please try again.");
+    } finally {
+      setIsOpening3DModel(false);
     }
   };
 
@@ -710,10 +721,11 @@ export default function ScanResultsScreen() {
         <View style={glassStyles.secondaryRow}>
           <LiquidGlassButton
             onPress={view3DModel}
-            title="View 3D"
+            title={isOpening3DModel ? "Opening..." : "View 3D"}
             icon="Box"
             variant="secondary"
             flex
+            loading={isOpening3DModel}
           />
           
           <LiquidGlassButton

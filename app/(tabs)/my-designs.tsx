@@ -122,9 +122,6 @@ export default function MyDesignsScreen() {
                             <Icon name="Trash2" size={18} color={colors.placeholder} />
                         </Pressable>
                     </View>
-                    <ThemedText className="text-sm text-light-subtext dark:text-dark-subtext mb-1" numberOfLines={2}>
-                        {item.prompt || 'No description'}
-                    </ThemedText>
                     <ThemedText className="text-xs text-light-subtext dark:text-dark-subtext">
                         {formatDate(item.createdAt)}
                     </ThemedText>
@@ -175,14 +172,6 @@ export default function MyDesignsScreen() {
                             resizeMode="cover"
                         />
                     </View>
-                </View>
-\].
-                {/* Prompt */}
-                <View className="px-4 pb-4" style={{ paddingBottom: insets.bottom + 16 }}>
-                    <ThemedText className="text-white/60 text-xs mb-1">Prompt</ThemedText>
-                    <ThemedText className="text-white text-sm">
-                        {selectedDesign.prompt || 'No description'}
-                    </ThemedText>
                 </View>
             </View>
         );

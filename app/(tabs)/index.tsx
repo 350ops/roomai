@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Pressable, Image, ScrollView, Dimensions } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Pressable, Image, ScrollView, Dimensions, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 
@@ -25,6 +25,15 @@ export default function ExploreScreen() {
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
+  const [currentModelIndex, setCurrentModelIndex] = useState(0);
+  const modelScrollRef = useRef<ScrollView>(null);
+
+  const handleModelScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const cardWidth = SCREEN_WIDTH - 32;
+    const index = Math.round(offsetX / cardWidth);
+    setCurrentModelIndex(Math.max(0, Math.min(index, FURNITURE_3D_MODELS.length - 1)));
+  };
 
   // Tips for better results - using translations
   const TIPS = [
@@ -129,31 +138,65 @@ export default function ExploreScreen() {
           </ScrollView>
         </AnimatedView>
 
-        {/* Interactive 3D Model Viewer */}
-        <AnimatedView animation="fadeInUp" delay={100} className="mt-6 px-4">
-          <View className="mb-3">
+        {/* Interactive 3D Model Viewer - Carousel */}
+        <AnimatedView animation="fadeInUp" delay={100} className="mt-6">
+          <View className="mb-3 px-4">
             <ThemedText className="text-lg font-bold">{t('furniture3D')}</ThemedText>
             <ThemedText className="text-sm text-light-subtext dark:text-dark-subtext">
               {t('furniture3DHelp')}
             </ThemedText>
           </View>
-          <View
-            style={{
-              width: SCREEN_WIDTH - 32,
-              height: 320,
-              borderRadius: 20,
-              overflow: 'hidden',
-              backgroundColor: colors.bg,
-            }}
+          
+          {/* Model Carousel */}
+          <ScrollView
+            ref={modelScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleModelScroll}
+            scrollEventThrottle={16}
+            contentContainerStyle={{ paddingHorizontal: 16 }}
+            decelerationRate="fast"
+            snapToInterval={SCREEN_WIDTH - 32}
+            snapToAlignment="start"
           >
-            <WebView3DModel
-              modelUrl={FURNITURE_3D_MODELS[0]}
-              width={SCREEN_WIDTH - 32}
-              height={320}
-              autoRotate
-              cameraControls
-              backgroundColor={colors.bg}
-            />
+            {FURNITURE_3D_MODELS.map((modelUrl, index) => (
+              <View
+                key={index}
+                style={{
+                  width: SCREEN_WIDTH - 32,
+                  height: 320,
+                  borderRadius: 20,
+                  overflow: 'hidden',
+                  backgroundColor: colors.bg,
+                  marginRight: index < FURNITURE_3D_MODELS.length - 1 ? 12 : 0,
+                }}
+              >
+                <WebView3DModel
+                  modelUrl={modelUrl}
+                  width={SCREEN_WIDTH - 32}
+                  height={320}
+                  autoRotate
+                  cameraControls
+                  backgroundColor={colors.bg}
+                />
+              </View>
+            ))}
+          </ScrollView>
+          
+          {/* Pagination Dots */}
+          <View className="flex-row justify-center mt-3 gap-2">
+            {FURNITURE_3D_MODELS.map((_, index) => (
+              <View
+                key={index}
+                style={{
+                  width: currentModelIndex === index ? 20 : 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: currentModelIndex === index ? colors.accent : colors.border,
+                }}
+              />
+            ))}
           </View>
         </AnimatedView>
 
