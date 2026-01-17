@@ -64,6 +64,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mmdev13.reforma",
+      "entitlements": {
+        "aps-environment": "production"
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "This app needs access to your photos to select room images for AI renovation.",
