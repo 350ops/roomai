@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Pressable, Image, FlatList, Alert, RefreshControl } from 'react-native';
+import { View, Pressable, Image, FlatList, Alert, RefreshControl, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useFocusEffect } from 'expo-router';
 
@@ -8,6 +8,7 @@ import Icon from '@/components/Icon';
 import AnimatedView from '@/components/AnimatedView';
 import useThemeColors from '@/app/_contexts/ThemeColors';
 import { loadDesigns, deleteDesign, SavedDesign } from '@/app/_utils/designStorage';
+import BeforeAfterSlider from '@/components/BeforeAfterSlider';
 
 export default function MyDesignsScreen() {
     const colors = useThemeColors();
@@ -73,6 +74,10 @@ export default function MyDesignsScreen() {
         });
     };
 
+    const { width: SCREEN_WIDTH } = Dimensions.get('window');
+    const SLIDER_WIDTH = SCREEN_WIDTH - 32;
+    const SLIDER_HEIGHT = (SLIDER_WIDTH * 3) / 4; // 4:3 ratio
+
     const DesignCard = ({ item, index }: { item: SavedDesign; index: number }) => (
         <AnimatedView 
             animation="fadeInUp" 
@@ -84,28 +89,15 @@ export default function MyDesignsScreen() {
                 onLongPress={() => handleDeleteDesign(item)}
                 className="rounded-2xl overflow-hidden"
             >
-                {/* Before/After Images */}
-                <View className="flex-row">
-                    <View className="flex-1">
-                        <View className="absolute top-2 left-2 z-10 bg-black/60 px-2 py-1 rounded">
-                            <ThemedText className="text-white text-xs">Before</ThemedText>
-                        </View>
-                        <Image 
-                            source={{ uri: item.originalImage }} 
-                            className="w-full aspect-square"
-                            resizeMode="cover"
-                        />
-                    </View>
-                    <View className="flex-1">
-                        <View className="absolute top-2 left-2 z-10 bg-black/60 px-2 py-1 rounded">
-                            <ThemedText className="text-white text-xs">After</ThemedText>
-                        </View>
-                        <Image 
-                            source={{ uri: item.resultImage }} 
-                            className="w-full aspect-square"
-                            resizeMode="cover"
-                        />
-                    </View>
+                {/* Before/After Slider */}
+                <View className="w-full items-center bg-black/5 dark:bg-white/5">
+                    <BeforeAfterSlider
+                        beforeImage={{ uri: item.originalImage }}
+                        afterImage={{ uri: item.resultImage }}
+                        width={SLIDER_WIDTH}
+                        height={SLIDER_HEIGHT}
+                        borderRadius={20}
+                    />
                 </View>
 
                 {/* Info */}
@@ -152,26 +144,14 @@ export default function MyDesignsScreen() {
                     </Pressable>
                 </View>
 
-                <View className="flex-1 justify-center">
-                    {/* Before */}
-                    <View className="px-4 mb-2">
-                        <ThemedText className="text-white/60 text-sm mb-2">Before</ThemedText>
-                        <Image
-                            source={{ uri: selectedDesign.originalImage }}
-                            className="w-full aspect-[4/3] rounded-xl"
-                            resizeMode="cover"
-                        />
-                    </View>
-
-                    {/* After */}
-                    <View className="px-4 mt-4">
-                        <ThemedText className="text-white/60 text-sm mb-2">After</ThemedText>
-                        <Image
-                            source={{ uri: selectedDesign.resultImage }}
-                            className="w-full aspect-[4/3] rounded-xl"
-                            resizeMode="cover"
-                        />
-                    </View>
+                <View className="flex-1 justify-center px-4">
+                    <BeforeAfterSlider
+                        beforeImage={{ uri: selectedDesign.originalImage }}
+                        afterImage={{ uri: selectedDesign.resultImage }}
+                        width={SCREEN_WIDTH - 32}
+                        height={((SCREEN_WIDTH - 32) * 3) / 4}
+                        borderRadius={16}
+                    />
                 </View>
             </View>
         );

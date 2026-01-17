@@ -388,6 +388,7 @@ export default function CreateScreen() {
 
     const [image, setImage] = useState<string | null>(null);
     const [prompt, setPrompt] = useState('');
+    const [autoPrompt, setAutoPrompt] = useState('');
     const [resultImage, setResultImage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [errorDetails, setErrorDetails] = useState<string | null>(null);
@@ -694,12 +695,10 @@ Output must appear as a real photograph, not a 3D render.`;
         return promptSections.join('\n\n');
     };
 
-    // Update prompt when selections change
+    // Keep an internal auto-built prompt (don't show it in the UI)
     useEffect(() => {
-        const autoPrompt = buildPromptFromSelections();
-        if (autoPrompt) {
-            setPrompt(autoPrompt);
-        }
+        const generated = buildPromptFromSelections();
+        setAutoPrompt(generated);
     }, [selectedWall, selectedFlooring, selectedFlooringSampleId, selectedFurnitureStyle, selectedStyle]);
 
     // Trigger generation when slider completes
@@ -955,7 +954,7 @@ Output must appear as a real photograph, not a 3D render.`;
             Alert.alert('Image Missing', 'Please select an image to edit.');
             return;
         }
-        if (!prompt) {
+        if (!prompt && !autoPrompt) {
             Alert.alert('Prompt Missing', 'Please describe what you want to edit or generate.');
             return;
         }
@@ -1035,7 +1034,7 @@ Output must appear as a real photograph, not a 3D render.`;
                 `📸 Sending ${imagesArray.length} images to API (room + ${flooringSampleCount} flooring sample + ${selectedFurnitureItems.length} furniture items + ${uploadedImages.length} uploaded products)`
             );
             
-            const enhancedPrompt = buildPromptFromSelections();
+            const enhancedPrompt = autoPrompt || buildPromptFromSelections();
             formData.append('prompt', enhancedPrompt);
             formData.append('input_fidelity', 'high');
             formData.append('n', '1');
