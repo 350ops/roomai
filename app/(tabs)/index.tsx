@@ -31,7 +31,9 @@ export default function ExploreScreen() {
   const handleModelScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const cardWidth = SCREEN_WIDTH - 32;
-    const index = Math.round(offsetX / cardWidth);
+    const gap = 12;
+    // Account for the card width + gap when calculating index
+    const index = Math.round(offsetX / (cardWidth + gap));
     setCurrentModelIndex(Math.max(0, Math.min(index, FURNITURE_3D_MODELS.length - 1)));
   };
 
@@ -151,14 +153,14 @@ export default function ExploreScreen() {
           <ScrollView
             ref={modelScrollRef}
             horizontal
-            pagingEnabled
             showsHorizontalScrollIndicator={false}
             onScroll={handleModelScroll}
             scrollEventThrottle={16}
-            contentContainerStyle={{ paddingHorizontal: 16 }}
             decelerationRate="fast"
-            snapToInterval={SCREEN_WIDTH - 32}
+            snapToOffsets={FURNITURE_3D_MODELS.map((_, i) => i * (SCREEN_WIDTH - 32 + 12))}
             snapToAlignment="start"
+            contentInset={{ left: 16, right: 16 }}
+            contentOffset={{ x: -16, y: 0 }}
           >
             {FURNITURE_3D_MODELS.map((modelUrl, index) => (
               <View
@@ -169,7 +171,8 @@ export default function ExploreScreen() {
                   borderRadius: 20,
                   overflow: 'hidden',
                   backgroundColor: colors.bg,
-                  marginRight: index < FURNITURE_3D_MODELS.length - 1 ? 12 : 0,
+                  marginLeft: index === 0 ? 16 : 0,
+                  marginRight: index < FURNITURE_3D_MODELS.length - 1 ? 12 : 16,
                 }}
               >
                 <WebView3DModel
