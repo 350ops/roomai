@@ -350,6 +350,20 @@ export default function ScanResultsScreen() {
   };
 
   const view3DModel = async () => {
+    // Check if we have room data (JSON) for the enhanced 3D viewer
+    if (params.jsonUrl && roomData) {
+      // Navigate to the enhanced 3D viewer with textures and furniture
+      router.push({
+        pathname: '/screens/room-3d-viewer',
+        params: {
+          jsonUrl: params.jsonUrl,
+          scanUrl: params.scanUrl || '',
+        },
+      });
+      return;
+    }
+    
+    // Fallback to original USDZ Quick Look if no JSON data
     if (!params.scanUrl) {
       Alert.alert("No Model", "No 3D model available.");
       return;
