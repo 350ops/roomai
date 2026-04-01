@@ -33,22 +33,13 @@ import AnimatedView from '@/components/AnimatedView';
 import AnimatedBottomSheet from '@/components/AnimatedBottomSheet';
 import { AppleListRow, AppleListGroup } from '@/components/AppleListRow';
 import { saveDesign } from '@/app/_utils/designStorage';
+import { fetchOpenAI } from '@/app/_lib/api-client';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const CARD_WIDTH = SCREEN_WIDTH - 80;     
 
-// Supabase Edge Function URL for secure OpenAI proxy
-const getEdgeFunctionUrl = () => {
-    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-    return `${supabaseUrl}/functions/v1/openai-image`;
-};
-
-// Supabase anon key for Edge Function authorization
-const getSupabaseAnonKey = () => {
-    return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 
-           process.env.EXPO_PUBLIC_SUPABASE_KEY || '';
-};
+const getOpenAIApiKey = () => process.env.EXPO_PUBLIC_OPENAI_API_KEY || '';
 
 const toRgba = (hexColor: string, alpha: number) => {
     if (!hexColor.startsWith('#')) {
@@ -946,8 +937,8 @@ Output must appear as a real photograph, not a 3D render.`;
     const handleGenerate = () => {
         setErrorDetails(null);
 
-        if (!getSupabaseAnonKey()) {
-            Alert.alert('Configuration Error', 'Service is not configured. Please contact support.');
+        if (!getOpenAIApiKey()) {
+            Alert.alert('Configuration Error', 'OpenAI API key is not configured.');
             return;
         }
         if (!image) {
@@ -977,6 +968,11 @@ Output must appear as a real photograph, not a 3D render.`;
         console.log('📦 Selected furniture items:', selectedFurnitureItems);
 
         try {
+            const apiKey = getOpenAIApiKey();
+            if (!apiKey) {
+                return { success: false, error: 'OpenAI API key is not configured.' };
+            }
+
             const formData = new FormData();
             
             // Build array of images: room image first, then furniture reference images
@@ -985,8 +981,8 @@ Output must appear as a real photograph, not a 3D render.`;
             // Main room image (first for highest fidelity preservation)
             imagesArray.push({
                 uri: image,
-                name: 'room.png',
-                type: 'image/png',
+                name: 'room.jpg',
+                type: 'image/jpeg',
             });
 
             if (selectedFlooringSample) {
@@ -1041,12 +1037,10 @@ Output must appear as a real photograph, not a 3D render.`;
             formData.append('size', '1024x1024');
             formData.append('model', 'gpt-image-1');
 
-            const response = await fetch(getEdgeFunctionUrl(), {
+            const response = await fetchOpenAI('/v1/images/edits', apiKey, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${getSupabaseAnonKey()}`,
-                },
                 body: formData,
+                timeout: 120000,
             });
 
             const responseText = await response.text();

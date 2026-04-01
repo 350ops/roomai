@@ -38,3 +38,6 @@ yarn-error.log*
 .expo
 dist/
 web-build/
+
+# Supabase CLI temp artifacts
+supabase/.temp/
