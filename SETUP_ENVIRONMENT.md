@@ -106,7 +106,7 @@ eas build --profile production --platform ios
 
 ### Important Notes:
 
-1. **API Key Exposure:** Variables prefixed with `EXPO_PUBLIC_` are embedded in the app binary and can be extracted. For maximum security, consider implementing a backend proxy for OpenAI API calls.
+1. **API Key Exposure:** Variables prefixed with `EXPO_PUBLIC_` are embedded in the app binary and can be extracted. This project currently calls OpenAI directly from the client for simplicity.
 
 2. **Supabase Row Level Security (RLS):** Since the Supabase anon key is public, you MUST configure Row Level Security policies in your Supabase database to protect user data.
 
